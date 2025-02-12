@@ -3,7 +3,8 @@ pipeline {
 
     environment {
         BITBUCKET_REPO = "https://bitbucket.org/ndammak/itona-k6.git"
-        BITBUCKET_CRED_ID = 'bbck'  // This must match the credential ID in Jenkins
+        BITBUCKET_CRED_ID = 'bbck'  // Matches credentials stored in Jenkins
+        K6_WEB_DASHBOARD = "true"
     }
 
     stages {
@@ -18,31 +19,73 @@ pipeline {
             }
         }
 
-        stage('Install K6 (if needed)') {
+        stage('Install Dependencies') {
             steps {
                 script {
-                    def k6Installed = sh(script: 'which k6 || echo "not found"', returnStdout: true).trim()
-                    if (k6Installed == "not found") {
-                        sh '''
-                        echo "⚙️ K6 not found, installing..."
-                        sudo apt update && sudo apt install -y k6
-                        '''
-                    } else {
-                        echo "✅ K6 is already installed!"
-                    }
+                    sh '''
+                    echo "⚙️ Installing K6 and dependencies..."
+                    sudo apt update
+                    sudo apt install -y k6
+                    go install go.k6.io/xk6/cmd/xk6@latest
+                    docker pull grafana/xk6
+                    docker pull eclipse-mosquitto
+                    '''
                 }
             }
         }
 
-        stage('Run K6 Tests') {
+        stage('Build xK6 with MQTT and File Plugins') {
             steps {
                 script {
                     sh '''
-                    echo "🚀 Running all K6 tests inside the 'final' folder..."
-                    for test in final/*.js; do
-                        echo "🔍 Executing: $test"
-                        ./k6 run $test
-                    done
+                    echo "🔨 Building xK6 with MQTT plugin..."
+                    xk6 build v0.54.0 \
+                        --with github.com/pmalhaire/xk6-mqtt@latest \
+                        --with github.com/avitalique/xk6-file@latest
+                    '''
+                }
+            }
+        }
+
+        stage('Start MQTT Broker') {
+            steps {
+                script {
+                    sh '''
+                    echo "🚀 Starting MQTT Broker..."
+                    docker run --rm --name mosquitto -d -p 1883:1883 eclipse-mosquitto mosquitto -c /mosquitto-no-auth.conf
+                    '''
+                }
+            }
+        }
+
+        stage('Run K6 Device Test') {
+            steps {
+                script {
+                    sh '''
+                    echo "📡 Running K6 device_test.js scenario..."
+                    ./k6 run --duration 3m --vus 3 final/device_test.js
+                    '''
+                }
+            }
+        }
+
+        stage('Fix JSON Output') {
+            steps {
+                script {
+                    sh '''
+                    echo "🛠️ Fixing JSON output with Node.js formatter..."
+                    node JsonFormatter
+                    '''
+                }
+            }
+        }
+
+        stage('Run MQTT Connection Test') {
+            steps {
+                script {
+                    sh '''
+                    echo "🔗 Running MQTT connection test..."
+                    ./k6 run --duration 3m --vus 3 final/Mqtt_connection.js
                     '''
                 }
             }
@@ -54,10 +97,10 @@ pipeline {
             echo "✅ Pipeline execution completed!"
         }
         success {
-            echo "🎉 All K6 Tests Passed!"
+            echo "🎉 All K6 and MQTT Tests Passed!"
         }
         failure {
-            echo "❌ Some K6 Tests Failed!"
+            echo "❌ Some tests failed!"
         }
     }
 }
