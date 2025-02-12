@@ -164,57 +164,6 @@ try {
         return "device-" + Math.random().toString(36).substring(2, 10);
     }
 
-    // function createDevice() {
-    //     console.log("📡 Creating a new device...");
-    //     if (!token) {
-    //         console.error("❌ Token is not available. Cannot create device.");
-    //         return;
-    //     }
-    //     let headers = {
-    //         'Content-Type': 'application/json',
-    //         'Authorization': `Bearer ${token}`,
-    //     };
-
-    //     let payload = JSON.stringify({
-    //         "name": generateUniqueName(),
-    //         "label": "Test Device",
-    //         "additionalInfo": {}
-    //     });
-
-    //     let res = http.post(`${BASE_URL}/device`, payload, { headers });
-    //     let deviceData = res.json();
-
-    //     if (!deviceData || !deviceData.id || !deviceData.id.id) {
-    //         console.error("❌ Failed to create device!", res.body);
-    //         return;
-    //     }
-
-    //     deviceId = deviceData.id.id;
-    //     console.log(`📡 Device Created: ${deviceId}`);
-    // }
-
-    // function fetchAccessToken() {
-    //     console.log(`🔑 Fetching credentials for Device ID: ${deviceId}`);
-    //     if (!token || !deviceId) {
-    //         console.error("❌ Missing token or deviceId. Cannot fetch access token.");
-    //         return;
-    //     }
-    //     let headers = {
-    //         'Content-Type': 'application/json',
-    //         'Authorization': `Bearer ${token}`,
-    //     };
-
-    //     let res = http.get(`${BASE_URL}/device/${deviceId}/credentials`, { headers });
-    //     let credentialsData = res.json();
-
-    //     if (!credentialsData || !credentialsData.credentialsId) {
-    //         console.error("❌ Failed to fetch credentials!", res.body);
-    //         return;
-    //     }
-
-    //     credentialsId = credentialsData.credentialsId;
-    //     console.log(`🔑 Retrieved Credentials ID: ${credentialsId}`);
-    // }
 
     export default function () {
 
