@@ -1,0 +1,63 @@
+pipeline {
+    agent any
+
+    environment {
+        BITBUCKET_REPO = "https://bitbucket.org/ndammak/itona-k6.git"
+        BITBUCKET_CRED_ID = 'bbck'  // This must match the credential ID in Jenkins
+    }
+
+    stages {
+        stage('Checkout Code') {
+            steps {
+                script {
+                    echo "🔄 Fetching code from Bitbucket..."
+                    git branch: 'main',
+                        credentialsId: BITBUCKET_CRED_ID,
+                        url: BITBUCKET_REPO
+                }
+            }
+        }
+
+        stage('Install K6 (if needed)') {
+            steps {
+                script {
+                    def k6Installed = sh(script: 'which k6 || echo "not found"', returnStdout: true).trim()
+                    if (k6Installed == "not found") {
+                        sh '''
+                        echo "⚙️ K6 not found, installing..."
+                        sudo apt update && sudo apt install -y k6
+                        '''
+                    } else {
+                        echo "✅ K6 is already installed!"
+                    }
+                }
+            }
+        }
+
+        stage('Run K6 Tests') {
+            steps {
+                script {
+                    sh '''
+                    echo "🚀 Running all K6 tests inside the 'final' folder..."
+                    for test in final/*.js; do
+                        echo "🔍 Executing: $test"
+                        k6 run $test
+                    done
+                    '''
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            echo "✅ Pipeline execution completed!"
+        }
+        success {
+            echo "🎉 All K6 Tests Passed!"
+        }
+        failure {
+            echo "❌ Some K6 Tests Failed!"
+        }
+    }
+}
