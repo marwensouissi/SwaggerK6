@@ -41,7 +41,7 @@ pipeline {
                     echo "🚀 Running all K6 tests inside the 'final' folder..."
                     for test in final/*.js; do
                         echo "🔍 Executing: $test"
-                        k6 run $test
+                        ./k6 run $test
                     done
                     '''
                 }
