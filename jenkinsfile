@@ -46,23 +46,14 @@ pipeline {
             }
         }
 
-        stage('Start MQTT Broker') {
-            steps {
-                script {
-                    sh '''
-                    echo "🚀 Starting MQTT Broker..."
-                    sudo docker run --rm --name mosquitto -d -p 1883:1883 eclipse-mosquitto mosquitto -c /mosquitto-no-auth.conf
-                    '''
-                }
-            }
-        }
+
 
         stage('Run K6 Device Test') {
             steps {
                 script {
                     sh '''
                     echo "📡 Running K6 device_test.js scenario..."
-                    ./k6 run --duration 3m --vus 3 final/device_test.js
+                    ./k6 run --duration 1m --vus 3 final/device_test.js
                     '''
                 }
             }
@@ -84,7 +75,7 @@ pipeline {
                 script {
                     sh '''
                     echo "🔗 Running MQTT connection test..."
-                    ./k6 run --duration 3m --vus 3 final/Mqtt_connection.js
+                    ./k6 run --duration 1m --vus 3 final/Mqtt_connection.js
                     '''
                 }
             }
