@@ -53,7 +53,8 @@ pipeline {
                 script {
                     sh '''
                     echo "📡 Running K6 device_test.js scenario..."
-                    ./k6 run --duration 1m --vus 3 final/device_test.js
+                    cd final
+                    ./k6 run --duration 1m --vus 3 device_test.js
                     '''
                 }
             }
@@ -64,6 +65,7 @@ pipeline {
                 script {
                     sh '''
                     echo "🛠️ Fixing JSON output with Node.js formatter..."
+                    
                     node JsonFormatter
                     '''
                 }
