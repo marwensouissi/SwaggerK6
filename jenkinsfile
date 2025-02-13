@@ -25,6 +25,8 @@ pipeline {
                     sh '''
                     echo "⚙️ Installing K6 and dependencies..."
                     go install go.k6.io/xk6/cmd/xk6@latest
+                    docker pull grafana/xk6
+                    docker pull eclipse-mosquitto
                     '''
                 }
             }
@@ -35,7 +37,9 @@ pipeline {
                 script {
                     sh '''
                     echo "🔨 Building xK6 with MQTT plugin..."
-                   
+                    xk6 build v0.54.0 \
+                        --with github.com/pmalhaire/xk6-mqtt@latest \
+                        --with github.com/avitalique/xk6-file@latest
                     '''
                 }
             }
@@ -46,6 +50,7 @@ pipeline {
                 script {
                     sh '''
                     echo "🚀 Starting MQTT Broker..."
+                    docker run --rm --name mosquitto -d -p 1883:1883 eclipse-mosquitto mosquitto -c /mosquitto-no-auth.conf
                     '''
                 }
             }
