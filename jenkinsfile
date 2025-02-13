@@ -25,11 +25,10 @@ pipeline {
                 script {
                     sh '''
                     echo "⚙️ Installing K6 and dependencies..."
-                    sudo apt update
-                    sudo apt install -y k6 nodejs npm
+                    npm install
                     go install go.k6.io/xk6/cmd/xk6@latest
-                    sudo docker pull grafana/xk6
-                    sudo docker pull eclipse-mosquitto
+                     docker pull grafana/xk6
+                     docker pull eclipse-mosquitto
                     '''
                 }
             }
