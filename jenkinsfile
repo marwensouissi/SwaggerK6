@@ -37,9 +37,8 @@ pipeline {
                 script {
                     sh '''
                     echo "🔨 Building xK6 with MQTT plugin..."
-                    xk6 build v0.54.0 \
-                        --with github.com/pmalhaire/xk6-mqtt@latest \
-                        --with github.com/avitalique/xk6-file@latest
+                    xk6 build v0.54.0 --with github.com/pmalhaire/xk6-mqtt@latest 
+                    ./k6 version
                     '''
                 }
             }
