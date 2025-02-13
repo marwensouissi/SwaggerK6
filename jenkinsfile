@@ -3,8 +3,9 @@ pipeline {
 
     environment {
         BITBUCKET_REPO = "https://bitbucket.org/ndammak/itona-k6.git"
-        BITBUCKET_CRED_ID = 'bbck'  // Matches credentials stored in Jenkins
+        BITBUCKET_CRED_ID = 'bbck'
         K6_WEB_DASHBOARD = "true"
+        XK6_PATH = "/var/lib/jenkins/go/bin/xk6"  // Set full path for Jenkins
     }
 
     stages {
@@ -24,32 +25,35 @@ pipeline {
                 script {
                     sh '''
                     echo "⚙️ Installing K6 and dependencies..."
+                    sudo apt update
+                    sudo apt install -y k6 nodejs npm
                     go install go.k6.io/xk6/cmd/xk6@latest
-                    docker pull grafana/xk6
-                    docker pull eclipse-mosquitto
+                    sudo docker pull grafana/xk6
+                    sudo docker pull eclipse-mosquitto
                     '''
                 }
             }
         }
 
-stage('Build xK6 with MQTT and File Plugins') {
-    steps {
-        script {
-            sh '''
-            echo "🔨 Building xK6 with MQTT plugin using Docker..."
-            docker run --rm -v $(pwd):/xk6 -w /xk6 grafana/xk6 build v0.54.0 --with github.com/pmalhaire/xk6-mqtt@latest
-            ./k6 version
-            '''
+        stage('Build xK6 with MQTT and File Plugins') {
+            steps {
+                script {
+                    sh '''
+                    echo "🔨 Building xK6 with MQTT plugin..."
+                    $XK6_PATH build v0.54.0 \
+                        --with github.com/pmalhaire/xk6-mqtt@latest \
+                        --with github.com/avitalique/xk6-file@latest
+                    '''
+                }
+            }
         }
-    }
-}
 
         stage('Start MQTT Broker') {
             steps {
                 script {
                     sh '''
                     echo "🚀 Starting MQTT Broker..."
-                    docker run --rm --name mosquitto -d -p 1883:1883 eclipse-mosquitto mosquitto -c /mosquitto-no-auth.conf
+                    sudo docker run --rm --name mosquitto -d -p 1883:1883 eclipse-mosquitto mosquitto -c /mosquitto-no-auth.conf
                     '''
                 }
             }
