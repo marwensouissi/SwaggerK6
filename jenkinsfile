@@ -32,17 +32,17 @@ pipeline {
             }
         }
 
-        stage('Build xK6 with MQTT and File Plugins') {
-            steps {
-                script {
-                    sh '''
-                    echo "🔨 Building xK6 with MQTT plugin..."
-                    xk6 build v0.54.0 --with github.com/pmalhaire/xk6-mqtt@latest 
-                    ./k6 version
-                    '''
-                }
-            }
+stage('Build xK6 with MQTT and File Plugins') {
+    steps {
+        script {
+            sh '''
+            echo "🔨 Building xK6 with MQTT plugin using Docker..."
+            docker run --rm -v $(pwd):/xk6 -w /xk6 grafana/xk6 build v0.54.0 --with github.com/pmalhaire/xk6-mqtt@latest
+            ./k6 version
+            '''
         }
+    }
+}
 
         stage('Start MQTT Broker') {
             steps {
