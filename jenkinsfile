@@ -25,7 +25,6 @@ pipeline {
                 script {
                     sh '''
                     echo "⚙️ Installing K6 and dependencies..."
-                    npm install
                     go install go.k6.io/xk6/cmd/xk6@latest
                      docker pull grafana/xk6
                      docker pull eclipse-mosquitto
