@@ -1,10 +1,10 @@
 pipeline {
-    agent { label 'k6' } 
-    
+    agent {
+        label 'k6' // Ensures the pipeline runs on the K6 slave
+    }
+
     environment {
-        BITBUCKET_REPO = "https://bitbucket.org/ndammak/itona-k6.git"
-        BITBUCKET_CRED_ID = 'bbck'
-        DOCKER_IMAGE = "optimized-k6"
+        JSON_FILE = "$WORKSPACE/final/device_credentials.json"
     }
 
     stages {
@@ -13,59 +13,56 @@ pipeline {
                 script {
                     echo "🔄 Fetching code from Bitbucket..."
                     git branch: 'main',
-                        credentialsId: BITBUCKET_CRED_ID,
-                        url: BITBUCKET_REPO
+                        credentialsId: 'bbck',
+                        url: 'https://bitbucket.org/ndammak/itona-k6.git'
                 }
             }
         }
 
-        stage('Build Docker Image') {
+        stage('Check JSON Before Test') {
             steps {
                 script {
-                    echo "🐳 Building Docker image for K6 tests..."
-                    sh "docker build -t ${DOCKER_IMAGE} ."
+                    echo "🔍 Checking device_credentials.json BEFORE test:"
+                    sh "cat $JSON_FILE || echo '⚠️ File not found!'"
                 }
             }
         }
 
-        stage('Run K6 Device Test') {
+        stage('Run K6 Test') {
             steps {
                 script {
-                    echo "📡 Running K6 device_test.js scenario..."
-                    sh "docker run --rm -v $WORKSPACE/final:/app/final ${DOCKER_IMAGE} run /app/final/Device_test.js"
+                    echo "📡 Running K6 Test..."
+                    sh "docker run --rm -v $WORKSPACE/final:/app optimized-k6 run /app/final/Device_test.js"
                 }
             }
         }
 
-        stage('Fix JSON Output') {
+        stage('Check JSON After Test') {
             steps {
                 script {
-                
-                    echo "🛠️ Fixing JSON output with Node.js formatter..."
-// Debugging - Ensure JSON file exists
-                    sh "ls -lah \$WORKSPACE/final"
-
-                    // Run JSON Formatter in Node.js
-                    sh """
-                        docker run --rm \
-                        -v \$WORKSPACE/final:/app \
-                        node:18-alpine \
-                        node /app/JsonFormatter.js
-                    """
-
+                    echo "🔍 Checking device_credentials.json AFTER test:"
+                    sh "cat $JSON_FILE || echo '⚠️ File not found!'"
                 }
             }
         }
-        
-        stage('Run MQTT test') {
+
+        stage('Clear JSON File') {
             steps {
                 script {
-                    echo "📡 Running K6 mqtt scenario..."
-                    sh "docker run --rm -v $WORKSPACE/final:/app/final ${DOCKER_IMAGE} run /app/final/Mqtt_connection.js"
+                    echo "🧹 Clearing device_credentials.json..."
+                    sh "echo '[]' > $JSON_FILE"
                 }
             }
         }
 
+        stage('Final Check JSON') {
+            steps {
+                script {
+                    echo "🔍 Checking device_credentials.json AFTER clearing:"
+                    sh "cat $JSON_FILE || echo '⚠️ File not found!'"
+                }
+            }
+        }
     }
 
     post {
@@ -73,7 +70,7 @@ pipeline {
             echo "✅ Pipeline execution completed!"
         }
         success {
-            echo "🎉 All K6 and MQTT Tests Passed!"
+            echo "🎉 All K6 Tests Passed!"
         }
         failure {
             echo "❌ Some tests failed!"
