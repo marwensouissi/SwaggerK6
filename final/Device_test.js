@@ -37,7 +37,7 @@ function saveCredentialsToFile(credentialsId) {
     existingData.push({ credentialsId });
 
     try {
-        file.writeString(FILE_PATH, JSON.stringify(existingData, null, 2) + "\n"); 
+        file.appendString(FILE_PATH, JSON.stringify(existingData, null, 2) + "\n"); 
         console.log(`✅ Credentials saved: ${credentialsId}`);
     } catch (error) {
         console.error("❌ Error writing credentials to file!", error);
