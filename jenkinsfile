@@ -23,9 +23,7 @@ pipeline {
             steps {
                 script {
                     echo "🐳 Building Docker image for K6 tests..."
-                    sh '''
-                    docker build -t ${DOCKER_IMAGE} .
-                    '''
+                    sh "docker build -t ${DOCKER_IMAGE} ."
                 }
             }
         }
@@ -34,23 +32,16 @@ pipeline {
             steps {
                 script {
                     echo "📡 Running K6 device_test.js scenario..."
-                    sh '''
-                    docker run --rm -v $WORKSPACE/final:/app/final ${DOCKER_IMAGE} /app/k6 run /app/final/Device_test.js
-
-                    
-                    
-                    '''
+                    sh "docker run --rm -v $WORKSPACE/final:/app/final ${DOCKER_IMAGE} run /app/final/Device_test.js"
                 }
             }
         }
 
-        stage('Run MQTT Connection Test') {
+        stage('Fix JSON Output') {
             steps {
                 script {
-                    echo "🔗 Running MQTT connection test..."
-                    sh '''
-                    docker run --rm -v $WORKSPACE/final:/app/final ${DOCKER_IMAGE} /app/final/Mqtt_connection.js
-                    '''
+                    echo "🛠️ Fixing JSON output with Node.js formatter..."
+                    sh "docker run --rm -v $WORKSPACE/final:/app/final ${DOCKER_IMAGE} node /app/final/JsonFormatter.js"
                 }
             }
         }
