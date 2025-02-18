@@ -48,6 +48,16 @@ pipeline {
             }
         }
 
+        // ✅ NEW STEP: Print device_credentials.json after test
+        stage('Print Device Credentials') {
+            steps {
+                script {
+                    echo "📜 Contents of device_credentials.json after K6 test:"
+                    sh "cat $WORKSPACE/final/device_credentials.json"
+                }
+            }
+        }
+
         stage('Fix JSON Output') {
             steps {
                 script {
