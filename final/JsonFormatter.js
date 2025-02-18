@@ -1,6 +1,8 @@
 const fs = require('fs');
+const path = require('path');
 
-const FILE_PATH = "device_credentials.json";
+// Ensure we use absolute path within the mounted volume
+const FILE_PATH = path.join(__dirname, "device_credentials.json");
 
 function fixJsonFile() {
     let fixedData = [];
