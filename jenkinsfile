@@ -5,8 +5,6 @@ pipeline {
         BITBUCKET_REPO = "https://bitbucket.org/ndammak/itona-k6.git"
         BITBUCKET_CRED_ID = 'bbck'
         K6_WEB_DASHBOARD = "true"
-        XK6_PATH = "/var/lib/jenkins/go/bin/xk6"  // Set full path for Jenkins
-        K6_BINARY = "$WORKSPACE/k6"  // Path to the built k6 binary
     }
 
     stages {
@@ -21,51 +19,23 @@ pipeline {
             }
         }
 
-        stage('Install Dependencies') {
+        stage('Build Docker Image') {
             steps {
                 script {
                     sh '''
-                    echo "⚙️ Installing K6 and dependencies..."
-                    go install go.k6.io/xk6/cmd/xk6@latest
-                    docker pull grafana/xk6
-                    docker pull eclipse-mosquitto
+                    echo "🐳 Building Docker image for K6 tests..."
+                    docker build -t k6-tests .
                     '''
                 }
             }
         }
 
-        stage('Build xK6 with MQTT and File Plugins') {
+        stage('Run K6 Tests in Docker') {
             steps {
                 script {
                     sh '''
-                    echo "🔨 Building xK6 with MQTT and File plugins..."
-                    $XK6_PATH build v0.54.0 \
-                        --with github.com/pmalhaire/xk6-mqtt@latest \
-                        --with github.com/avitalique/xk6-file@latest
-
-                    # Remove old k6 binary if it exists
-                    if [ -f "$K6_BINARY" ]; then
-                        rm -f $K6_BINARY
-                    fi
-
-                    # Move new k6 binary to workspace
-                    mv k6 $K6_BINARY  
-                    chmod +x $K6_BINARY  
-
-                    # Verify k6 version to confirm build success
-                    $K6_BINARY version
-                    '''
-                }
-            }
-        }
-
-        stage('Run K6 Device Test') {
-            steps {
-                script {
-                    sh '''
-                    echo "📡 Running K6 device_test.js scenario..."
-                    cd final
-                    $K6_BINARY run --duration 1m --vus 3 final/device_test.js
+                    echo "📡 Running K6 tests inside Docker..."
+                    docker run --rm k6-tests final/device_test.js
                     '''
                 }
             }
@@ -86,8 +56,8 @@ pipeline {
             steps {
                 script {
                     sh '''
-                    echo "🔗 Running MQTT connection test..."
-                    $K6_BINARY run --duration 1m --vus 3 final/Mqtt_connection.js
+                    echo "🔗 Running MQTT connection test inside Docker..."
+                    docker run --rm k6-tests final/Mqtt_connection.js
                     '''
                 }
             }
