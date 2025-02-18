@@ -19,22 +19,22 @@ pipeline {
             }
         }
 
+        // ✅ NEW: Ensure `device_credentials.json` is empty BEFORE building Docker image
+        stage('Clear Device Credentials') {
+            steps {
+                script {
+                    echo "🗑️ Clearing device_credentials.json file before building Docker image..."
+                    sh "echo -n '' > $WORKSPACE/final/device_credentials.json"
+                    sh "ls -lah $WORKSPACE/final"  // Debugging - Verify file exists
+                }
+            }
+        }
+
         stage('Build Docker Image') {
             steps {
                 script {
                     echo "🐳 Building Docker image for K6 tests..."
                     sh "docker build -t ${DOCKER_IMAGE} ."
-                }
-            }
-        }
-
-        // ✅ NEW STAGE: Clear `device_credentials.json`
-        stage('Clear Device Credentials') {
-            steps {
-                script {
-                    echo "🗑️ Clearing device_credentials.json file..."
-                    sh "echo -n '' > $WORKSPACE/final/device_credentials.json"
-                    sh "ls -lah $WORKSPACE/final"  // Debugging - Ensure file is still there
                 }
             }
         }
@@ -48,7 +48,7 @@ pipeline {
             }
         }
 
-        // ✅ NEW STEP: Print device_credentials.json after test
+        // ✅ NEW: Print `device_credentials.json` after K6 test to confirm it was written
         stage('Print Device Credentials') {
             steps {
                 script {
@@ -74,7 +74,7 @@ pipeline {
                 }
             }
         }
-        
+
         stage('Run MQTT test') {
             steps {
                 script {
@@ -86,14 +86,4 @@ pipeline {
     }
 
     post {
-        always {
-            echo "✅ Pipeline execution completed!"
-        }
-        success {
-            echo "🎉 All K6 and MQTT Tests Passed!"
-        }
-        failure {
-            echo "❌ Some tests failed!"
-        }
-    }
-}
+     
