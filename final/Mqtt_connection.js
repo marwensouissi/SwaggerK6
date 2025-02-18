@@ -2,13 +2,13 @@ import { check, sleep } from 'k6';
 import mqtt from 'k6/x/mqtt';
 import { SharedArray } from 'k6/data';
 
-// ✅ K6 Options
+// ✅ K6 Load Testing Options
 export let options = {
-    vus: 3,        // Number of Virtual Users
-    iterations: 3  // Each VU runs this many times
+    vus: 4,        // Number of Virtual Users (Each VU represents a different device)
+    duration: '60s' // Run for 60 seconds
 };
 
-// ✅ Load credentials from file using SharedArray
+// ✅ Load credentials from JSON file
 const credentialsData = new SharedArray('device_credentials', function () {
     let data;
     try {
@@ -17,98 +17,96 @@ const credentialsData = new SharedArray('device_credentials', function () {
         console.error("❌ Failed to load credentials file!", error);
         return [];
     }
-
-    if (!Array.isArray(data) || data.length === 0) {
-        console.error("❌ No credentials found in device_credentials.json!");
-        return [];
-    }
-
-    return data;
+    return Array.isArray(data) ? data : [];
 });
 
-// ✅ Ensure we have enough credentials
+// ✅ Ensure credentials exist
 if (credentialsData.length === 0) {
     throw new Error("❌ No credentials available! Ensure `device_credentials.json` is not empty.");
 }
 
-const broker = "mqtt://dev-itona.xyz"; 
-const port = "1883";  
-const password = "";  
-const topic = "v1/devices/me/telemetry";
+// ✅ MQTT Broker Configuration
+const broker = "mqtt://dev-itona.xyz";
+const port = "1883";  // MQTT Port
+const password = "YourPasswordIfRequired"; // Set a password if needed
 
-// ✅ Global MQTT Clients Storage (Each VU Uses Its Own)
+// ✅ Global MQTT Clients Storage (Each VU gets its own connection)
 let publishers = {};
 
-// ✅ Ensure MQTT Clients Are Initialized Only Once
-if (Object.keys(publishers).length === 0) {
-    console.log("🚀 Initializing MQTT clients for all VUs...");
+// ✅ MQTT Connection Setup - Run Once Per VU (Before Default Function)
+console.log("🚀 Initializing MQTT connections for all Virtual Users...");
 
-    for (let i = 1; i <= options.vus; i++) {
-        const index = (i - 1) % credentialsData.length;
-        const credentials = credentialsData[index];
+for (let i = 1; i <= options.vus; i++) {
+    const vuIndex = (i - 1) % credentialsData.length;
+    const credentials = credentialsData[vuIndex];
 
-        if (!credentials || !credentials.credentialsId) {
-            console.error(`❌ VU ${i} failed to retrieve credentialsId.`);
-            continue;
-        }
+    if (!credentials || !credentials.credentialsId) {
+        console.error(`❌ VU ${i} failed to retrieve credentialsId.`);
+        continue;
+    }
 
-        const credentialsId = credentials.credentialsId;
-        const clientId = `k6-client-${i}`;
+    const credentialsId = credentials.credentialsId;
+    const clientId = `k6-client-${i}`;
 
-        console.log(`✅ VU ${i} assigned credentialsId: ${credentialsId}`);
+    console.log(`✅ VU ${i} assigned credentialsId: ${credentialsId}`);
 
-        try {
-            publishers[i] = new mqtt.Client(
-                [`${broker}:${port}`], 
-                credentialsId,  
-                password, 
-                false,  
-                clientId,  
-                5000, 
-                "",  
-                "",  
-                "", 
-                {
-                    sentBytesLabel: "mqtt_sent_bytes",
-                    receivedBytesLabel: "mqtt_received_bytes",
-                    sentMessagesCountLabel: "mqtt_sent_messages_count",
-                    receivedMessagesCountLabel: "mqtt_received_messages_count",
-                },
-                false, 
-                "TLS 1.2"  
-            );
+    try {
+        publishers[i] = new mqtt.Client(
+            [`${broker}:${port}`], 
+            credentialsId,  
+            password, 
+            false,  
+            clientId,  
+            5000, 
+            "",  
+            "",  
+            "", 
+            {
+                sentBytesLabel: "mqtt_sent_bytes",
+                receivedBytesLabel: "mqtt_received_bytes",
+                sentMessagesCountLabel: "mqtt_sent_messages_count",
+                receivedMessagesCountLabel: "mqtt_received_messages_count",
+            },
+            false, 
+            "TLS 1.2"
+        );
 
-            console.log(`🚀 VU ${i} Connecting to MQTT Broker...`);
-            publishers[i].connect();
-            console.log(`✅ VU ${i} Connected to MQTT!`);
-        } catch (error) {
-            console.error(`❌ VU ${i} Connection Failed!`, error);
-        }
+        console.log(`🚀 VU ${i} Connecting to MQTT Broker...`);
+        publishers[i].connect();
+        console.log(`✅ VU ${i} Connected to MQTT!`);
+    } catch (error) {
+        console.error(`❌ VU ${i} Connection Failed!`, error);
     }
 }
 
-// ✅ Each VU Uses Its Pre-Initialized MQTT Client
+// ✅ Main Test Execution - Runs Per VU
 export default function () {
     if (!publishers[__VU]) {
         console.error(`❌ MQTT Publisher not initialized for VU ${__VU}!`);
         return;
     }
 
-    let payload = JSON.stringify({
-        temperature: (Math.random() * 50).toFixed(2),
-        humidity: (Math.random() * 100).toFixed(2),
-        timestamp: new Date().toISOString()
-    });
+    const credentialsId = credentialsData[(__VU - 1) % credentialsData.length].credentialsId;
+    const deviceTopic = `v1/devices/me/telemetry`;  // Modify if needed per device
 
-    try {
-        console.log(`📡 VU ${__VU} Publishing to topic: ${topic}`);
-        publishers[__VU].publish(topic, 1, payload, false, 5000);
-        console.log(`✅ VU ${__VU} Message Sent: ${payload}`);
-    } catch (error) {
-        console.error(`❌ VU ${__VU} Publish Failed!`, error);
+    for (let i = 0; i < 5; i++) {  // Send 5 messages per second
+        let payload = JSON.stringify({
+            device_id: credentialsId,
+            temperature: (Math.random() * 50).toFixed(2),
+            humidity: (Math.random() * 100).toFixed(2),
+            timestamp: new Date().toISOString()
+        });
+
+        try {
+            console.log(`📡 VU ${__VU} Publishing to topic: ${deviceTopic}`);
+            publishers[__VU].publish(deviceTopic, 1, payload, true, 5000);  // Retain = true
+            console.log(`✅ VU ${__VU} Message Sent: ${payload}`);
+        } catch (error) {
+            console.error(`❌ VU ${__VU} Publish Failed!`, error);
+        }
+
+        sleep(0.2);  // 5 messages per second (1/5 = 0.2s per message)
     }
-
-    sleep(2);
 }
 
 // ✅ Cleanup: Close All MQTT Connections at End
