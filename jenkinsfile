@@ -5,10 +5,12 @@ pipeline {
         BITBUCKET_REPO = "https://bitbucket.org/ndammak/itona-k6.git"
         BITBUCKET_CRED_ID = 'bbck'
         K6_WEB_DASHBOARD = "true"
-        XK6_PATH = "/var/lib/jenkins/go/bin/xk6"  // Set full path for Jenkins
+        XK6_PATH = "/var/lib/jenkins/go/bin/xk6"  // Ensure this path is correct
+        WORKSPACE_DIR = "${env.WORKSPACE}"
     }
 
     stages {
+
         stage('Checkout Code') {
             steps {
                 script {
@@ -26,8 +28,8 @@ pipeline {
                     sh '''
                     echo "⚙️ Installing K6 and dependencies..."
                     go install go.k6.io/xk6/cmd/xk6@latest
-                     docker pull grafana/xk6
-                     docker pull eclipse-mosquitto
+                    docker pull grafana/xk6
+                    docker pull eclipse-mosquitto
                     '''
                 }
             }
@@ -37,16 +39,17 @@ pipeline {
             steps {
                 script {
                     sh '''
-                    echo "🔨 Building xK6 with MQTT plugin..."
+                    echo "🔨 Building xK6 with MQTT and File plugins..."
                     $XK6_PATH build v0.54.0 \
                         --with github.com/pmalhaire/xk6-mqtt@latest \
                         --with github.com/avitalique/xk6-file@latest
+
+                    mv k6 $WORKSPACE/k6  # Move compiled K6 binary to workspace
+                    chmod +x $WORKSPACE/k6  # Ensure it's executable
                     '''
                 }
             }
         }
-
-
 
         stage('Run K6 Device Test') {
             steps {
@@ -54,7 +57,7 @@ pipeline {
                     sh '''
                     echo "📡 Running K6 device_test.js scenario..."
                     cd final
-                    ./k6 run --duration 1m --vus 3 final/device_test.js
+                    $WORKSPACE/k6 run --duration 1m --vus 3 final/device_test.js
                     '''
                 }
             }
@@ -65,7 +68,6 @@ pipeline {
                 script {
                     sh '''
                     echo "🛠️ Fixing JSON output with Node.js formatter..."
-                    
                     node JsonFormatter
                     '''
                 }
@@ -77,7 +79,7 @@ pipeline {
                 script {
                     sh '''
                     echo "🔗 Running MQTT connection test..."
-                    ./k6 run --duration 1m --vus 3 final/Mqtt_connection.js
+                    $WORKSPACE/k6 run --duration 1m --vus 3 final/Mqtt_connection.js
                     '''
                 }
             }
