@@ -1,27 +1,32 @@
-# Use multi-stage build for efficiency
+# Stage 1: Build k6 with plugins
 FROM golang:1.23 AS builder
 
 # Install dependencies
 RUN go install go.k6.io/xk6/cmd/xk6@latest
 
+# Set working directory
 WORKDIR /build
 
-# Remove COPY go.mod and go.sum if they're not needed
-# COPY go.mod go.sum ./  
-
-# Copy the entire source code
-COPY . .
-
-# Build xK6 with MQTT & File plugins
+# Build K6 with MQTT & File plugins
 RUN /go/bin/xk6 build v0.54.0 \
     --with github.com/pmalhaire/xk6-mqtt@latest \
     --with github.com/avitalique/xk6-file@latest \
     --output k6
 
-# Final image
+# Stage 2: Create lightweight runtime environment
 FROM alpine:latest
-WORKDIR /app
-COPY --from=builder /build/k6 /app/k6
-RUN chmod +x /app/k6
 
-ENTRYPOINT ["/app/k6", "run"]
+# Install required dependencies
+RUN apk add --no-cache ca-certificates
+
+# Set working directory
+WORKDIR /app
+
+# Copy the built K6 binary from builder stage
+COPY --from=builder /build/k6 /usr/local/bin/k6
+
+# Copy test scripts into container
+COPY final/ /app/final/
+
+# Set the default command
+ENTRYPOINT ["k6"]
