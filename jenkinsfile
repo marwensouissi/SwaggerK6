@@ -5,12 +5,11 @@ pipeline {
         BITBUCKET_REPO = "https://bitbucket.org/ndammak/itona-k6.git"
         BITBUCKET_CRED_ID = 'bbck'
         K6_WEB_DASHBOARD = "true"
-        XK6_PATH = "/var/lib/jenkins/go/bin/xk6"  // Ensure this path is correct
-        WORKSPACE_DIR = "${env.WORKSPACE}"
+        XK6_PATH = "/var/lib/jenkins/go/bin/xk6"  // Set full path for Jenkins
+        K6_BINARY = "$WORKSPACE/k6"  // Path to the built k6 binary
     }
 
     stages {
-
         stage('Checkout Code') {
             steps {
                 script {
@@ -35,32 +34,30 @@ pipeline {
             }
         }
 
-stage('Build xK6 with MQTT and File Plugins') {
-    steps {
-        script {
-            sh '''
-            echo "🔨 Building xK6 with MQTT and File plugins..."
-            $XK6_PATH build v0.54.0 \
-                --with github.com/pmalhaire/xk6-mqtt@latest \
-                --with github.com/avitalique/xk6-file@latest
+        stage('Build xK6 with MQTT and File Plugins') {
+            steps {
+                script {
+                    sh '''
+                    echo "🔨 Building xK6 with MQTT and File plugins..."
+                    $XK6_PATH build v0.54.0 \
+                        --with github.com/pmalhaire/xk6-mqtt@latest \
+                        --with github.com/avitalique/xk6-file@latest
 
-            # Ensure old k6 binary is removed
-            if [ -f "$WORKSPACE/k6" ]; then
-                rm -f $WORKSPACE/k6
-            fi
+                    # Remove old k6 binary if it exists
+                    if [ -f "$K6_BINARY" ]; then
+                        rm -f $K6_BINARY
+                    fi
 
-            # Move new k6 binary to workspace and make executable
-            mv k6 $WORKSPACE/k6  
-            chmod +x $WORKSPACE/k6  
+                    # Move new k6 binary to workspace
+                    mv k6 $K6_BINARY  
+                    chmod +x $K6_BINARY  
 
-            # Verify k6 version to confirm build success
-            $WORKSPACE/k6 version
-            '''
+                    # Verify k6 version to confirm build success
+                    $K6_BINARY version
+                    '''
+                }
+            }
         }
-    }
-}
-
-
 
         stage('Run K6 Device Test') {
             steps {
@@ -68,7 +65,7 @@ stage('Build xK6 with MQTT and File Plugins') {
                     sh '''
                     echo "📡 Running K6 device_test.js scenario..."
                     cd final
-                    $WORKSPACE/k6 run --duration 1m --vus 3 final/device_test.js
+                    $K6_BINARY run --duration 1m --vus 3 final/device_test.js
                     '''
                 }
             }
@@ -90,7 +87,7 @@ stage('Build xK6 with MQTT and File Plugins') {
                 script {
                     sh '''
                     echo "🔗 Running MQTT connection test..."
-                    $WORKSPACE/k6 run --duration 1m --vus 3 final/Mqtt_connection.js
+                    $K6_BINARY run --duration 1m --vus 3 final/Mqtt_connection.js
                     '''
                 }
             }
