@@ -35,9 +35,9 @@ pipeline {
                 script {
                     echo "📡 Running K6 device_test.js scenario..."
                     sh '''
-                    docker run --rm -v $WORKSPACE/final:/app/final ${DOCKER_IMAGE} sh -c "./k6 run /app/final/Device_test.js"
+                    docker run --rm -v $WORKSPACE/final:/app/final ${DOCKER_IMAGE} /app/k6 run /app/final/Device_test.js
 
-                
+                    
                     
                     '''
                 }
@@ -49,7 +49,7 @@ pipeline {
                 script {
                     echo "🔗 Running MQTT connection test..."
                     sh '''
-                    docker run --rm -v $WORKSPACE/final:/app/final ${DOCKER_IMAGE} ./k6 run /app/final/Mqtt_connection.js
+                    docker run --rm -v $WORKSPACE/final:/app/final ${DOCKER_IMAGE} /app/final/Mqtt_connection.js
                     '''
                 }
             }
