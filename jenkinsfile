@@ -6,7 +6,7 @@ pipeline {
         BITBUCKET_CRED_ID = 'bbck'
         DOCKER_IMAGE = "optimized-k6"
         CREDENTIALS_FILE = "$WORKSPACE/final/device_credentials.json"
-        DURATION = "3m"
+        DURATION = "1m"
         VUS = "3"
         K6_WEB_DASHBOARD = "true"
         K6_DASHBOARD_DEVICE_PORT = "6565" // Port for Device Test Dashboard
@@ -57,7 +57,7 @@ pipeline {
 
                     // ✅ Wait for Dashboard & Open in Browser
                     sleep(5)
-                    echo "📢 K6 Dashboard running at: http://localhost:${K6_DASHBOARD_DEVICE_PORT}"
+                    echo "📢 K6 Dashboard running at: http://127.0.0.1:${K6_DASHBOARD_DEVICE_PORT}"
                 }
             }
         }
@@ -76,7 +76,7 @@ pipeline {
 
                     // ✅ Wait for Dashboard & Open in Browser
                     sleep(5)
-                    echo "📢 K6 Dashboard running at: http://localhost:${K6_DASHBOARD_MQTT_PORT}"
+                    echo "📢 K6 Dashboard running at: http://127.0.0.1:${K6_DASHBOARD_MQTT_PORT}"
                 }
             }
         }
