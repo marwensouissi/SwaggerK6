@@ -57,7 +57,7 @@ pipeline {
 
                     // ✅ Wait for Dashboard & Open in Browser
                     sleep(5)
-                    sh "xdg-open http://localhost:${K6_DASHBOARD_DEVICE_PORT} || open http://localhost:${K6_DASHBOARD_DEVICE_PORT} || start http://localhost:${K6_DASHBOARD_DEVICE_PORT}"
+                    echo "📢 K6 Dashboard running at: http://localhost:${K6_DASHBOARD_DEVICE_PORT}"
                 }
             }
         }
@@ -76,7 +76,7 @@ pipeline {
 
                     // ✅ Wait for Dashboard & Open in Browser
                     sleep(5)
-                    sh "xdg-open http://localhost:${K6_DASHBOARD_MQTT_PORT} || open http://localhost:${K6_DASHBOARD_MQTT_PORT} || start http://localhost:${K6_DASHBOARD_MQTT_PORT}"
+                    echo "📢 K6 Dashboard running at: http://localhost:${K6_DASHBOARD_MQTT_PORT}"
                 }
             }
         }
