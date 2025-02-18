@@ -6,6 +6,11 @@ pipeline {
         BITBUCKET_CRED_ID = 'bbck'
         DOCKER_IMAGE = "optimized-k6"
         CREDENTIALS_FILE = "$WORKSPACE/final/device_credentials.json"
+        DURATION = "3m"
+        VUS = "3"
+        K6_WEB_DASHBOARD = "true"
+        K6_DASHBOARD_DEVICE_PORT = "6565" // Port for Device Test Dashboard
+        K6_DASHBOARD_MQTT_PORT = "6566"   // Port for MQTT Test Dashboard
     }
 
     stages {
@@ -38,48 +43,40 @@ pipeline {
             }
         }
 
-        stage('Run K6 Device Test') {
+        stage('Run K6 Device Test with Dashboard') {
             steps {
                 script {
-                    echo "📡 Running K6 device_test.js scenario..."
-                    sh "docker run --rm -v $WORKSPACE/final:/app/final ${DOCKER_IMAGE} run /app/final/Device_test.js"
-                }
-            }
-        }
-
-        stage('View Credentials After Test') {
-            steps {
-                script {
-                    echo "📜 Contents of device_credentials.json after K6 test:"
-                    sh "cat ${CREDENTIALS_FILE}"
-                }
-            }
-        }
-
-        stage('Fix JSON Output') {
-            steps {
-                script {
-                    echo "🛠️ Fixing JSON output with Node.js formatter..."
+                    echo "📡 Running K6 device_test.js with Web Dashboard on port ${K6_DASHBOARD_DEVICE_PORT}..."
                     
-                    // Debugging - Ensure JSON file exists
-                    sh "ls -lah \$WORKSPACE/final"
-
-                    // Run JSON Formatter in Node.js
+                    // ✅ Start K6 Dashboard for Device Test
                     sh """
-                        docker run --rm \
-                        -v \$WORKSPACE/final:/app \
-                        node:18-alpine \
-                        node /app/JsonFormatter.js
+                        docker run --rm -d -p ${K6_DASHBOARD_DEVICE_PORT}:6565 -v $WORKSPACE/final:/app/final \
+                        -e K6_WEB_DASHBOARD=true \
+                        ${DOCKER_IMAGE} run --duration=${DURATION} --vus=${VUS} /app/final/Device_test.js
                     """
+
+                    // ✅ Wait for Dashboard & Open in Browser
+                    sleep(5)
+                    sh "xdg-open http://localhost:${K6_DASHBOARD_DEVICE_PORT} || open http://localhost:${K6_DASHBOARD_DEVICE_PORT} || start http://localhost:${K6_DASHBOARD_DEVICE_PORT}"
                 }
             }
         }
-        
-        stage('Run MQTT Test') {
+
+        stage('Run K6 MQTT Test with Dashboard') {
             steps {
                 script {
-                    echo "📡 Running K6 mqtt scenario..."
-                    sh "docker run --rm -v $WORKSPACE/final:/app/final ${DOCKER_IMAGE} run /app/final/Mqtt_connection.js"
+                    echo "📡 Running K6 mqtt scenario with Web Dashboard on port ${K6_DASHBOARD_MQTT_PORT}..."
+                    
+                    // ✅ Start K6 Dashboard for MQTT Test
+                    sh """
+                        docker run --rm -d -p ${K6_DASHBOARD_MQTT_PORT}:6565 -v $WORKSPACE/final:/app/final \
+                        -e K6_WEB_DASHBOARD=true \
+                        ${DOCKER_IMAGE} run --duration=${DURATION} --vus=${VUS} /app/final/Mqtt_connection.js
+                    """
+
+                    // ✅ Wait for Dashboard & Open in Browser
+                    sleep(5)
+                    sh "xdg-open http://localhost:${K6_DASHBOARD_MQTT_PORT} || open http://localhost:${K6_DASHBOARD_MQTT_PORT} || start http://localhost:${K6_DASHBOARD_MQTT_PORT}"
                 }
             }
         }
