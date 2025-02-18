@@ -44,18 +44,22 @@ stage('Build xK6 with MQTT and File Plugins') {
                 --with github.com/pmalhaire/xk6-mqtt@latest \
                 --with github.com/avitalique/xk6-file@latest
 
-            # Ensure existing binary is removed before moving
+            # Ensure old k6 binary is removed
             if [ -f "$WORKSPACE/k6" ]; then
                 rm -f $WORKSPACE/k6
             fi
 
-            # Move compiled binary to Jenkins workspace
+            # Move new k6 binary to workspace and make executable
             mv k6 $WORKSPACE/k6  
-            chmod +x $WORKSPACE/k6  # Ensure it's executable
+            chmod +x $WORKSPACE/k6  
+
+            # Verify k6 version to confirm build success
+            $WORKSPACE/k6 version
             '''
         }
     }
 }
+
 
 
         stage('Run K6 Device Test') {
