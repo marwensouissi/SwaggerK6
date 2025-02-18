@@ -35,21 +35,28 @@ pipeline {
             }
         }
 
-        stage('Build xK6 with MQTT and File Plugins') {
-            steps {
-                script {
-                    sh '''
-                    echo "🔨 Building xK6 with MQTT and File plugins..."
-                    $XK6_PATH build v0.54.0 \
-                        --with github.com/pmalhaire/xk6-mqtt@latest \
-                        --with github.com/avitalique/xk6-file@latest
+stage('Build xK6 with MQTT and File Plugins') {
+    steps {
+        script {
+            sh '''
+            echo "🔨 Building xK6 with MQTT and File plugins..."
+            $XK6_PATH build v0.54.0 \
+                --with github.com/pmalhaire/xk6-mqtt@latest \
+                --with github.com/avitalique/xk6-file@latest
 
-                    mv k6 $WORKSPACE/k6  # Move compiled K6 binary to workspace
-                    chmod +x $WORKSPACE/k6  # Ensure it's executable
-                    '''
-                }
-            }
+            # Ensure existing binary is removed before moving
+            if [ -f "$WORKSPACE/k6" ]; then
+                rm -f $WORKSPACE/k6
+            fi
+
+            # Move compiled binary to Jenkins workspace
+            mv k6 $WORKSPACE/k6  
+            chmod +x $WORKSPACE/k6  # Ensure it's executable
+            '''
         }
+    }
+}
+
 
         stage('Run K6 Device Test') {
             steps {
