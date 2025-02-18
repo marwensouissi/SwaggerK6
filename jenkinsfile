@@ -41,10 +41,21 @@ pipeline {
             steps {
                 script {
                     echo "🛠️ Fixing JSON output with Node.js formatter..."
-                    sh "docker run --rm -v $WORKSPACE/final:/app/final ${DOCKER_IMAGE} node /app/final/JsonFormatter.js"
+                    sh "docker run --rm -v $WORKSPACE/final:/app node:18-alpine node /app/JsonFormatter.js"
+
                 }
             }
         }
+        
+        stage('Run MQTT test') {
+            steps {
+                script {
+                    echo "📡 Running K6 mqtt scenario..."
+                    sh "docker run --rm -v $WORKSPACE/final:/app/final ${DOCKER_IMAGE} run /app/final/Mqtt_connection.js"
+                }
+            }
+        }
+
     }
 
     post {
