@@ -54,7 +54,7 @@ pipeline {
                     sh '''
                     echo "📡 Running K6 device_test.js scenario..."
                     cd final
-                    ./k6 run --duration 1m --vus 3 device_test.js
+                    ./k6 run --duration 1m --vus 3 final/device_test.js
                     '''
                 }
             }
