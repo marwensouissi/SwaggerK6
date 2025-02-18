@@ -40,8 +40,11 @@ pipeline {
         stage('Fix JSON Output') {
             steps {
                 script {
+                
                     echo "🛠️ Fixing JSON output with Node.js formatter..."
+                    ls -lah /var/lib/jenkins/workspace/K6_Test_Pipeline/final/
                     sh "docker run --rm -v $WORKSPACE/final:/app node:18-alpine node /app/final/JsonFormatter.js"
+
 
                 }
             }
