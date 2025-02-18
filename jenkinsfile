@@ -1,10 +1,10 @@
 pipeline {
-    agent {
-        label 'k6' // Ensures the pipeline runs on the K6 slave
-    }
-
+    agent { label 'k6' } 
+    
     environment {
-        JSON_FILE = "$WORKSPACE/final/device_credentials.json"
+        BITBUCKET_REPO = "https://bitbucket.org/ndammak/itona-k6.git"
+        BITBUCKET_CRED_ID = 'bbck'
+        DOCKER_IMAGE = "optimized-k6"
     }
 
     stages {
@@ -13,53 +13,63 @@ pipeline {
                 script {
                     echo "🔄 Fetching code from Bitbucket..."
                     git branch: 'main',
-                        credentialsId: 'bbck',
-                        url: 'https://bitbucket.org/ndammak/itona-k6.git'
+                        credentialsId: BITBUCKET_CRED_ID,
+                        url: BITBUCKET_REPO
                 }
             }
         }
 
-        stage('Check JSON Before Test') {
+        stage('Build Docker Image') {
             steps {
                 script {
-                    echo "🔍 Checking device_credentials.json BEFORE test:"
-                    sh "cat $JSON_FILE || echo '⚠️ File not found!'"
+                    echo "🐳 Building Docker image for K6 tests..."
+                    sh "docker build -t ${DOCKER_IMAGE} ."
                 }
             }
         }
 
-        stage('Run K6 Test') {
+        // ✅ NEW STAGE: Clear `device_credentials.json`
+        stage('Clear Device Credentials') {
             steps {
                 script {
-                    echo "📡 Running K6 Test..."
-                    sh "docker run --rm -v $WORKSPACE/final:/app optimized-k6 run /app/final/Device_test.js"
+                    echo "🗑️ Clearing device_credentials.json file..."
+                    sh "echo -n '' > $WORKSPACE/final/device_credentials.json"
+                    sh "ls -lah $WORKSPACE/final"  // Debugging - Ensure file is still there
                 }
             }
         }
 
-        stage('Check JSON After Test') {
+        stage('Run K6 Device Test') {
             steps {
                 script {
-                    echo "🔍 Checking device_credentials.json AFTER test:"
-                    sh "cat $JSON_FILE || echo '⚠️ File not found!'"
+                    echo "📡 Running K6 device_test.js scenario..."
+                    sh "docker run --rm -v $WORKSPACE/final:/app/final ${DOCKER_IMAGE} run /app/final/Device_test.js"
                 }
             }
         }
 
-        stage('Clear JSON File') {
+        stage('Fix JSON Output') {
             steps {
                 script {
-                    echo "🧹 Clearing device_credentials.json..."
-                    sh "echo '[]' > $JSON_FILE"
+                    echo "🛠️ Fixing JSON output with Node.js formatter..."
+                    sh "ls -lah \$WORKSPACE/final"  // Debugging - Ensure JSON file exists
+
+                    // Run JSON Formatter in Node.js
+                    sh """
+                        docker run --rm \
+                        -v \$WORKSPACE/final:/app \
+                        node:18-alpine \
+                        node /app/JsonFormatter.js
+                    """
                 }
             }
         }
-
-        stage('Final Check JSON') {
+        
+        stage('Run MQTT test') {
             steps {
                 script {
-                    echo "🔍 Checking device_credentials.json AFTER clearing:"
-                    sh "cat $JSON_FILE || echo '⚠️ File not found!'"
+                    echo "📡 Running K6 mqtt scenario..."
+                    sh "docker run --rm -v $WORKSPACE/final:/app/final ${DOCKER_IMAGE} run /app/final/Mqtt_connection.js"
                 }
             }
         }
@@ -70,7 +80,7 @@ pipeline {
             echo "✅ Pipeline execution completed!"
         }
         success {
-            echo "🎉 All K6 Tests Passed!"
+            echo "🎉 All K6 and MQTT Tests Passed!"
         }
         failure {
             echo "❌ Some tests failed!"
