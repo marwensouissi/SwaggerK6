@@ -42,8 +42,16 @@ pipeline {
                 script {
                 
                     echo "🛠️ Fixing JSON output with Node.js formatter..."
-                    sh "docker run --rm -v $WORKSPACE/final:/app/final node:18-alpine node /app/final/JsonFormatter.js"
+// Debugging - Ensure JSON file exists
+                    sh "ls -lah \$WORKSPACE/final"
 
+                    // Run JSON Formatter in Node.js
+                    sh """
+                        docker run --rm \
+                        -v \$WORKSPACE/final:/app \
+                        node:18-alpine \
+                        node /app/JsonFormatter.js
+                    """
 
                 }
             }
