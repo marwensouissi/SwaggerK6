@@ -2,8 +2,7 @@
 FROM golang:1.23 AS builder
 
 # Install dependencies
-RUN apt-get update && apt-get install -y git wget curl unzip && \
-    go install go.k6.io/xk6/cmd/xk6@latest
+RUN go install go.k6.io/xk6/cmd/xk6@latest
 
 WORKDIR /build
 
