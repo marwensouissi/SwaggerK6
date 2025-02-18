@@ -86,4 +86,14 @@ pipeline {
     }
 
     post {
-     
+        always {
+            echo "✅ Pipeline execution completed!"
+        }
+        success {
+            echo "🎉 All K6 and MQTT Tests Passed!"
+        }
+        failure {
+            echo "❌ Some tests failed!"
+        }
+    }
+}
