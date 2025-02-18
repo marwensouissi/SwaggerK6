@@ -4,7 +4,7 @@ pipeline {
     environment {
         BITBUCKET_REPO = "https://bitbucket.org/ndammak/itona-k6.git"
         BITBUCKET_CRED_ID = 'bbck'
-        K6_WEB_DASHBOARD = "true"
+        DOCKER_IMAGE = "optimized-k6"
     }
 
     stages {
@@ -22,31 +22,20 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 script {
-                    sh '''
                     echo "🐳 Building Docker image for K6 tests..."
-                    docker build -t k6-tests .
+                    sh '''
+                    docker build -t ${DOCKER_IMAGE} .
                     '''
                 }
             }
         }
 
-        stage('Run K6 Tests in Docker') {
+        stage('Run K6 Device Test') {
             steps {
                 script {
+                    echo "📡 Running K6 device_test.js scenario..."
                     sh '''
-                    echo "📡 Running K6 tests inside Docker..."
-                    docker run --rm k6-tests final/device_test.js
-                    '''
-                }
-            }
-        }
-
-        stage('Fix JSON Output') {
-            steps {
-                script {
-                    sh '''
-                    echo "🛠️ Fixing JSON output with Node.js formatter..."
-                    node JsonFormatter
+                    docker run --rm -v $WORKSPACE/final:/app/final ${DOCKER_IMAGE} /app/final/device_test.js
                     '''
                 }
             }
@@ -55,9 +44,9 @@ pipeline {
         stage('Run MQTT Connection Test') {
             steps {
                 script {
+                    echo "🔗 Running MQTT connection test..."
                     sh '''
-                    echo "🔗 Running MQTT connection test inside Docker..."
-                    docker run --rm k6-tests final/Mqtt_connection.js
+                    docker run --rm -v $WORKSPACE/final:/app/final ${DOCKER_IMAGE} /app/final/Mqtt_connection.js
                     '''
                 }
             }
