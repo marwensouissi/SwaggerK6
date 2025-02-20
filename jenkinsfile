@@ -1,14 +1,14 @@
 node('k6') {
 
-    environment {
-        BITBUCKET_REPO = "https://bitbucket.org/ndammak/itona-k6.git"
-        BITBUCKET_CRED_ID = 'bbck'
-        DOCKER_IMAGE = "optimized-k6"
-        CREDENTIALS_FILE = "$WORKSPACE/final/device_credentials.json"
-    }
+    // ✅ Define environment variables manually (Scripted Pipelines don't support 'environment' block)
+    def BITBUCKET_REPO = "https://bitbucket.org/ndammak/itona-k6.git"
+    def BITBUCKET_CRED_ID = "bbck"
+    def DOCKER_IMAGE = "optimized-k6"
+    def CREDENTIALS_FILE = "$WORKSPACE/final/device_credentials.json"
 
     try {
         echo "🔄 Fetching code from Bitbucket..."
+        
         checkout([
             $class: 'GitSCM',
             branches: [[name: 'main']],
@@ -18,11 +18,15 @@ node('k6') {
             ]]
         ])
 
+        echo "🔍 Debug: Repository Checkout Completed!"
+
         echo "🗑 Clearing device_credentials.json..."
         sh "echo '[]' > ${CREDENTIALS_FILE}"
+        echo "🔍 Debug: device_credentials.json Cleared!"
 
         echo "🐳 Building Docker image for K6 tests..."
         sh "docker build -t ${DOCKER_IMAGE} ."
+        echo "🔍 Debug: Docker Build Completed!"
 
         echo "📡 Running K6 device_test.js scenario..."
         sh """
@@ -30,6 +34,7 @@ node('k6') {
             -v $WORKSPACE/final:/app/final \
             ${DOCKER_IMAGE} run /app/final/Device_test.js
         """
+        echo "🔍 Debug: K6 Device Test Completed!"
 
         echo "📜 Contents of device_credentials.json after K6 test:"
         sh "cat ${CREDENTIALS_FILE}"
@@ -41,6 +46,7 @@ node('k6') {
             node:18-alpine \
             node /app/JsonFormatter.js
         """
+        echo "🔍 Debug: JSON Fix Completed!"
 
         echo "📡 Running K6 mqtt scenario..."
         sh """
@@ -48,6 +54,7 @@ node('k6') {
             -v $WORKSPACE/final:/app/final \
             ${DOCKER_IMAGE} run /app/final/Mqtt_connection.js
         """
+        echo "🔍 Debug: MQTT Test Completed!"
 
         echo "🎉 All K6 and MQTT Tests Passed!"
     } catch (Exception e) {
