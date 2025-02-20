@@ -1,5 +1,4 @@
-pipeline {
-    agent { label 'k6' } 
+node('k6') {
 
     environment {
         BITBUCKET_REPO = "https://bitbucket.org/ndammak/itona-k6.git"
@@ -8,62 +7,53 @@ pipeline {
         CREDENTIALS_FILE = "$WORKSPACE/final/device_credentials.json"
     }
 
-    steps {
-        script {
-            echo "🔄 Fetching code from Bitbucket..."
-            checkout([
-                $class: 'GitSCM',
-                branches: [[name: 'main']],
-                userRemoteConfigs: [[
-                    url: BITBUCKET_REPO,
-                    credentialsId: BITBUCKET_CRED_ID
-                ]]
-            ])
+    try {
+        echo "🔄 Fetching code from Bitbucket..."
+        checkout([
+            $class: 'GitSCM',
+            branches: [[name: 'main']],
+            userRemoteConfigs: [[
+                url: BITBUCKET_REPO,
+                credentialsId: BITBUCKET_CRED_ID
+            ]]
+        ])
 
-            echo "🗑 Clearing device_credentials.json..."
-            sh "echo '[]' > ${CREDENTIALS_FILE}"
+        echo "🗑 Clearing device_credentials.json..."
+        sh "echo '[]' > ${CREDENTIALS_FILE}"
 
-            echo "🐳 Building Docker image for K6 tests..."
-            sh "docker build -t ${DOCKER_IMAGE} ."
+        echo "🐳 Building Docker image for K6 tests..."
+        sh "docker build -t ${DOCKER_IMAGE} ."
 
-            echo "📡 Running K6 device_test.js scenario..."
-            sh """
-                docker run --rm \
-                -v $WORKSPACE/final:/app/final \
-                ${DOCKER_IMAGE} run /app/final/Device_test.js
-            """
+        echo "📡 Running K6 device_test.js scenario..."
+        sh """
+            docker run --rm \
+            -v $WORKSPACE/final:/app/final \
+            ${DOCKER_IMAGE} run /app/final/Device_test.js
+        """
 
-            echo "📜 Contents of device_credentials.json after K6 test:"
-            sh "cat ${CREDENTIALS_FILE}"
+        echo "📜 Contents of device_credentials.json after K6 test:"
+        sh "cat ${CREDENTIALS_FILE}"
 
-            echo "🛠️ Fixing JSON output with Node.js formatter..."
-            sh "ls -lah \$WORKSPACE/final"
+        echo "🛠️ Fixing JSON output with Node.js formatter..."
+        sh """
+            docker run --rm \
+            -v \$WORKSPACE/final:/app \
+            node:18-alpine \
+            node /app/JsonFormatter.js
+        """
 
-            sh """
-                docker run --rm \
-                -v \$WORKSPACE/final:/app \
-                node:18-alpine \
-                node /app/JsonFormatter.js
-            """
+        echo "📡 Running K6 mqtt scenario..."
+        sh """
+            docker run --rm \
+            -v $WORKSPACE/final:/app/final \
+            ${DOCKER_IMAGE} run /app/final/Mqtt_connection.js
+        """
 
-            echo "📡 Running K6 mqtt scenario..."
-            sh """
-                docker run --rm \
-                -v $WORKSPACE/final:/app/final \
-                ${DOCKER_IMAGE} run /app/final/Mqtt_connection.js
-            """
-        }
-    }
-
-    post {
-        always {
-            echo "✅ Pipeline execution completed!"
-        }
-        success {
-            echo "🎉 All K6 and MQTT Tests Passed!"
-        }
-        failure {
-            echo "❌ Some tests failed!"
-        }
+        echo "🎉 All K6 and MQTT Tests Passed!"
+    } catch (Exception e) {
+        echo "❌ Some tests failed! Error: ${e.getMessage()}"
+        currentBuild.result = 'FAILURE'
+    } finally {
+        echo "✅ Pipeline execution completed!"
     }
 }
