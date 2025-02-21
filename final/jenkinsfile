@@ -1,10 +1,94 @@
-pipeline {
-    agent any
+// pipeline {
+//     agent { label 'k6' } 
+    
+//     environment {
+//         BITBUCKET_REPO = "https://bitbucket.org/ndammak/itona-k6.git"
+//         BITBUCKET_CRED_ID = 'bbck'
+//         DOCKER_IMAGE = "optimized-k6"
+//     }
 
+//     stages {
+//         stage('Checkout Code') {
+//             steps {
+//                 script {
+//                     echo "🔄 Fetching code from Bitbucket..."
+//                     git branch: 'main',
+//                         credentialsId: BITBUCKET_CRED_ID,
+//                         url: BITBUCKET_REPO
+//                 }
+//             }
+//         }
+
+//         stage('Build Docker Image') {
+//             steps {
+//                 script {
+//                     echo "🐳 Building Docker image for K6 tests..."
+//                     sh "docker build -t ${DOCKER_IMAGE} ."
+//                 }
+//             }
+//         }
+
+//         stage('Run K6 Device Test') {
+//             steps {
+//                 script {
+//                     echo "📡 Running K6 device_test.js scenario..."
+//                     sh "docker run --rm -v $WORKSPACE/final:/app/final ${DOCKER_IMAGE} run /app/final/Device_test.js"
+//                 }
+//             }
+//         }
+
+//         stage('Fix JSON Output') {
+//             steps {
+//                 script {
+                
+//                     echo "🛠️ Fixing JSON output with Node.js formatter..."
+// // Debugging - Ensure JSON file exists
+//                     sh "ls -lah \$WORKSPACE/final"
+
+//                     // Run JSON Formatter in Node.js
+//                     sh """
+//                         docker run --rm \
+//                         -v \$WORKSPACE/final:/app \
+//                         node:18-alpine \
+//                         node /app/JsonFormatter.js
+//                     """
+
+//                 }
+//             }
+//         }
+        
+//         stage('Run MQTT test') {
+//             steps {
+//                 script {
+//                     echo "📡 Running K6 mqtt scenario..."
+//                     sh "docker run --rm -v $WORKSPACE/final:/app/final ${DOCKER_IMAGE} run /app/final/Mqtt_connection.js"
+//                 }
+//             }
+//         }
+
+//     }
+
+//     post {
+//         always {
+//             echo "✅ Pipeline execution completed!"
+//         }
+//         success {
+//             echo "🎉 All K6 and MQTT Tests Passed!"
+//         }
+//         failure {
+//             echo "❌ Some tests failed!"
+//         }
+//     }
+// }
+
+pipeline {
+    agent { label 'k6' } 
+    
     environment {
         BITBUCKET_REPO = "https://bitbucket.org/ndammak/itona-k6.git"
         BITBUCKET_CRED_ID = 'bbck'
-        K6_WEB_DASHBOARD = "true"
+        DOCKER_IMAGE = "optimized-k6"
+        CREDENTIALS_FILE = "$WORKSPACE/final/device_credentials.json"
     }
 
     stages {
@@ -19,24 +103,38 @@ pipeline {
             }
         }
 
-        stage('Build Docker Image') {
+        stage('Clear Credentials File') {
             steps {
                 script {
-                    sh '''
-                    echo "🐳 Building Docker image for K6 tests..."
-                    docker build -t k6-tests .
-                    '''
+                    echo "🗑 Clearing device_credentials.json..."
+                    sh "echo '[]' > ${CREDENTIALS_FILE}"
                 }
             }
         }
 
-        stage('Run K6 Tests in Docker') {
+        stage('Build Docker Image') {
             steps {
                 script {
-                    sh '''
-                    echo "📡 Running K6 tests inside Docker..."
-                    docker run --rm k6-tests final/device_test.js
-                    '''
+                    echo "🐳 Building Docker image for K6 tests..."
+                    sh "docker build -t ${DOCKER_IMAGE} ."
+                }
+            }
+        }
+
+        stage('Run K6 Device Test') {
+            steps {
+                script {
+                    echo "📡 Running K6 device_test.js scenario..."
+                    sh "docker run --rm -v $WORKSPACE/final:/app/final ${DOCKER_IMAGE} run /app/final/Device_test.js"
+                }
+            }
+        }
+
+        stage('View Credentials After Test') {
+            steps {
+                script {
+                    echo "📜 Contents of device_credentials.json after K6 test:"
+                    sh "cat ${CREDENTIALS_FILE}"
                 }
             }
         }
@@ -44,21 +142,27 @@ pipeline {
         stage('Fix JSON Output') {
             steps {
                 script {
-                    sh '''
                     echo "🛠️ Fixing JSON output with Node.js formatter..."
-                    node JsonFormatter
-                    '''
+                    
+                    // Debugging - Ensure JSON file exists
+                    sh "ls -lah \$WORKSPACE/final"
+
+                    // Run JSON Formatter in Node.js
+                    sh """
+                        docker run --rm \
+                        -v \$WORKSPACE/final:/app \
+                        node:18-alpine \
+                        node /app/JsonFormatter.js
+                    """
                 }
             }
         }
-
-        stage('Run MQTT Connection Test') {
+        
+        stage('Run MQTT Test') {
             steps {
                 script {
-                    sh '''
-                    echo "🔗 Running MQTT connection test inside Docker..."
-                    docker run --rm k6-tests final/Mqtt_connection.js
-                    '''
+                    echo "📡 Running K6 mqtt scenario..."
+                    sh "docker run --rm -v $WORKSPACE/final:/app/final ${DOCKER_IMAGE} run /app/final/Mqtt_connection.js"
                 }
             }
         }
