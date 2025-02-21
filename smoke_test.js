@@ -28,6 +28,7 @@ function performRequest() {
         '✅ Status is 200': () => isStatus200,
         '⏳ Response time > 200ms': () => isSlow,
     });
+    
 
     return res;
 }

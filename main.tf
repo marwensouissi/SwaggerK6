@@ -1,3 +1,14 @@
+terraform {
+  required_version = ">= 1.0.0"
+
+  required_providers {
+    digitalocean = {
+      source  = "digitalocean/digitalocean"
+      version = "~> 2.0"
+    }
+  }
+}
+
 provider "digitalocean" {
   token = var.do_token
 }
@@ -7,6 +18,8 @@ variable "do_token" {
   type        = string
   sensitive   = true
 }
+
+
 
 
 
@@ -40,7 +53,7 @@ resource "digitalocean_droplet" "k6_slave" {
   region = var.region
   size   = var.size
   image  = var.image
-  ssh_keys = [var.ssh_key]
+#   ssh_keys = [var.ssh_key]
 
 #   provisioner "remote-exec" {
 #     connection {
