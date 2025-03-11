@@ -11,7 +11,7 @@ export default function workflow() {
     const token = login("marwen.souissi00@gmail.com", "marwen123");
 
 
-    //************* CREATE DEVICE *********************/
+    //*************  POST CREATE DEVICE *********************/
     const post_metadata_device = {
         url: `${BASE_URL}/device`,
         payload: {

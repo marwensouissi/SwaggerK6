@@ -14,7 +14,7 @@ export let options = {
 // ✅ Main k6 Execution Function
 export default function () {
     // ************* SIGNUP & VERIFICATION TEST *********************/
-    const user = signup(BASE_URL);
+    const user = signup();
     if (!user) return;
 
     // ************* LOGIN TEST *********************/
