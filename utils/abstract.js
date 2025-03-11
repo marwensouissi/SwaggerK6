@@ -1,8 +1,8 @@
 import http from 'k6/http';
 import { check } from 'k6';
 
-// GET request with payload (includes query parameters or authentication)
-export function get_abstract_with_payload(metadata) {
+// Utility function to handle API requests
+function handleRequest(method, metadata, body = null) {
     const headers = {
         'Content-Type': 'application/json',
     };
@@ -18,128 +18,49 @@ export function get_abstract_with_payload(metadata) {
         },
     };
 
-    const response = http.get(metadata.url, params);
+    const response = body ? http[method](metadata.url, JSON.stringify(body), params) : http[method](metadata.url, params);
 
-    if (!metadata.fail) {
-        check(response, {
-            [`${metadata.job} - status is ${metadata.status || 200}`]: (r) => r.status === (metadata.status || 200),
-        }) || (metadata.fail === false && console.log(`Warning: ${metadata.job} failed with status ${response.status}`));
+    // Validate response status
+    const success = check(response, {
+        [`${metadata.job} - status ${metadata.status || 200}`]: (r) => r.status === (metadata.status || 200),
+    });
+
+    if (!success) {
+        return { success: false, status: response.status, error: response.body };
     }
 
-    return response.json();
+    try {
+        return { success: true, data: response.json() };
+    } catch (error) {  // Explicitly catch the error
+        return { success: false, status: response.status, error: "Invalid JSON response" };
+    }
+}
+
+// GET request with payload (includes query parameters or authentication)
+export function get_abstract_with_payload(metadata) {
+    return handleRequest('get', metadata);
 }
 
 // GET request without payload (simple GET request)
 export function get_abstract_without_payload(metadata) {
-    const headers = {
-        'Content-Type': 'application/json',
-    };
-    if (metadata.token) {
-        headers['Authorization'] = `Bearer ${metadata.token}`;
-    }
-
-    const params = {
-        headers: headers,
-        tags: {
-            name: metadata.tag,
-            job: metadata.job,
-        },
-    };
-
-    const response = http.get(metadata.url, params);
-
-    if (!metadata.fail) {
-        check(response, {
-            [`${metadata.job} - status is ${metadata.status || 200}`]: (r) => r.status === (metadata.status || 200),
-        }) || (metadata.fail === false && console.log(`Warning: ${metadata.job} failed with status ${response.status}`));
-    }
-
-    return response;
+    return handleRequest('get', metadata);
 }
 
 // POST request with payload
 export function post_abstract_with_payload(metadata) {
-    const headers = {
-        'Content-Type': 'application/json',
-    };
-    if (metadata.token) {
-        headers['Authorization'] = `Bearer ${metadata.token}`;
-    }
-
-    const params = {
-        headers: headers,
-        tags: {
-            name: metadata.tag,
-            job: metadata.job,
-        },
-    };
-
-    const response = http.post(metadata.url, JSON.stringify(metadata.payload), params);
-
-    // Check if the request was successful
-    const success = check(response, {
-        [`${metadata.job} - status is ${metadata.status || 201}`]: (r) => r.status === (metadata.status || 201),
-    });
-
-    if (!success) {
-        console.error(`❌ ${metadata.job} failed! Status: ${response.status}, Response: ${response.body}`);
-        return null;
-    }
-
-    return response.json();
+    return handleRequest('post', metadata, metadata.payload);
 }
+
 // PATCH request with payload
 export function patch_abstract_with_payload(metadata) {
-    const headers = {
-        'Content-Type': 'application/json',
-    };
-    if (metadata.token) {
-        headers['Authorization'] = `Bearer ${metadata.token}`;
-    }
-
-    const params = {
-        headers: headers,
-        tags: {
-            name: metadata.tag,
-            job: metadata.job,
-        },
-    };
-
-    const response = http.patch(metadata.url, JSON.stringify(metadata.payload), params);
-
-    if (!metadata.fail) {
-        check(response, {
-            [`${metadata.job} - status is ${metadata.status || 200}`]: (r) => r.status === (metadata.status || 200),
-        }) || (metadata.fail === false && console.log(`Warning: ${metadata.job} failed with status ${response.status}`));
-    }
-
-    return response.json();
+    return handleRequest('patch', metadata, metadata.payload);
 }
 
 // DELETE request without payload
 export function delete_abstract_without_payload(metadata) {
-    const headers = {
-        'Content-Type': 'application/json',
-    };
-    if (metadata.token) {
-        headers['Authorization'] = `Bearer ${metadata.token}`;
-    }
+    return handleRequest('del', metadata);
+}
 
-    const params = {
-        headers: headers,
-        tags: {
-            name: metadata.tag,
-            job: metadata.job,
-        },
-    };
-
-    const response = http.del(metadata.url, null, params);
-
-    if (!metadata.fail) {
-        check(response, {
-            [`${metadata.job} - status is ${metadata.status || 200}`]: (r) => r.status === (metadata.status || 200),
-        }) || (metadata.fail === false && console.log(`Warning: ${metadata.job} failed with status ${response.status}`));
-    }
-
-    return response;
+export function put_abstract_with_payload(metadata) {
+    return handleRequest('put', metadata);
 }
