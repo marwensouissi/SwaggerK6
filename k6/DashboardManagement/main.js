@@ -14,10 +14,14 @@ export default function workflow() {
     const post_metadata_dashboard = {
         url: `${BASE_URL}/dashboard`,
         payload: {
-            "title": "Test Dashboard",
+            "title": `Dashboard-${randomString(8)}`, // Titre aléatoire
             "image": null,
-            "additionalInfo": {},
-            "configuration": {},
+            "additionalInfo": {
+                "info": randomString(10), // Information aléatoire
+            },
+            "configuration": {
+                "setting": randomString(5), // Configuration aléatoire
+            },
         },
         tag: "test",
         job: "user creates a dashboard",
@@ -27,19 +31,23 @@ export default function workflow() {
     };
     const post_dashboard_result = post_abstract_with_payload(post_metadata_dashboard);
     console.log(post_dashboard_result); // Journaliser la réponse
-    
+
     const dashId = post_dashboard_result.data.id.id;
     sleep(0.5);
 
-    // *********************     UPDATE Dashboard (POST request)   *********************//         
+    // ********************* UPDATE Dashboard (POST request) *********************//
     const update_metadata_dashboard = {
         url: `${BASE_URL}/dashboard`,
         payload: {
             "id": { "entityType": "DASHBOARD", "id": dashId },
-            "title": "Updated Test Dashboard",
+            "title": `Updated-${randomString(8)}`, // Titre mis à jour aléatoire
             "image": null,
-            "additionalInfo": {},
-            "configuration": {},
+            "additionalInfo": {
+                "info": randomString(10), // Information mise à jour aléatoire
+            },
+            "configuration": {
+                "setting": randomString(5), // Configuration mise à jour aléatoire
+            },
         },
         tag: "test",
         job: "user updates the dashboard",
@@ -51,37 +59,37 @@ export default function workflow() {
     console.log(update_response); // Journaliser la réponse
     sleep(0.2);
 
-    //*******************    IMPORT Dashboard (POST request)   *********************//
+    //******************* IMPORT Dashboard (POST request) *********************//
     const post_import_dashboard = {
         url: `${BASE_URL}/dashboard`,
         payload: {
-            "title": "import1",
+            "title": `Import-${randomString(8)}`, // Titre aléatoire pour l'import
             "image": null,
-            "mobileHide": false,
-            "mobileOrder": null,
-            "itemIconInNavbar": null,
-            "subFolder": "",
-            "itemOrderInNavbar": null,
-            "itemOrderInSubFolder": null,
-            "installed": false,
-            "fixRow": false,
-            "pinDashboardInNavbar": false,
+            "mobileHide": Math.random() < 0.5, // Booléen aléatoire
+            "mobileOrder": Math.floor(Math.random() * 100), // Nombre aléatoire
+            "itemIconInNavbar": randomString(5), // Icône aléatoire
+            "subFolder": randomString(6), // Sous-dossier aléatoire
+            "itemOrderInNavbar": Math.floor(Math.random() * 10),
+            "itemOrderInSubFolder": Math.floor(Math.random() * 10),
+            "installed": Math.random() < 0.5,
+            "fixRow": Math.random() < 0.5,
+            "pinDashboardInNavbar": Math.random() < 0.5,
             "additionalInfo": {
                 "languages": {
-                    "en_US": { "title": "import1", "description": "", "subFolder": "" },
-                    "fr_FR": { "title": "", "description": "", "subFolder": "" },
-                    "ar_AR": { "title": "", "description": "", "subFolder": "" }
+                    "en_US": { "title": `EN-${randomString(5)}`, "description": "", "subFolder": "" },
+                    "fr_FR": { "title": `FR-${randomString(5)}`, "description": "", "subFolder": "" },
+                    "ar_AR": { "title": `AR-${randomString(5)}`, "description": "", "subFolder": "" }
                 }
             },
             "userCreatorId": { "entityType": "USER", "id": "fb9c9450-f811-11ef-981b-31dced26e2fc" },
-            "permissions": null, 
-            "starred": false,
+            "permissions": null,
+            "starred": Math.random() < 0.5,
             "configuration": {
-                "description": "",
+                "description": randomString(15),
                 "widgets": {},
                 "states": {
                     "default": {
-                        "name": "import1",
+                        "name": `State-${randomString(5)}`,
                         "root": true,
                         "layouts": {
                             "main": {
@@ -108,7 +116,7 @@ export default function workflow() {
                     "hideTimezone": false,
                     "selectedTab": 0,
                     "realtime": { "realtimeType": 0, "interval": 1000, "timewindowMs": 60000, "quickInterval": "CURRENT_DAY" },
-                    "history": { "historyType": 0, "interval": 1000, "timewindowMs": 60000, "fixedTimewindow": { "startTimeMs": 1741088443996, "endTimeMs": 1741174843996 }, "quickInterval": "CURRENT_DAY" },
+                    "history": { "historyType": 0, "interval": 1000, "timewindowMs": 60000, "fixedTimewindow": { "startTimeMs": Date.now() - 60000, "endTimeMs": Date.now() }, "quickInterval": "CURRENT_DAY" },
                     "aggregation": { "type": "AVG", "limit": 25000 }
                 },
                 "settings": {
@@ -122,7 +130,7 @@ export default function workflow() {
                 }
             },
             "externalId": null,
-            "name": "dashboardTest"
+            "name": `Dashboard-${randomString(8)}`
         },
         tag: "test",
         job: "user import a dashboard",
@@ -133,29 +141,6 @@ export default function workflow() {
     const post_import_result = post_abstract_with_payload(post_import_dashboard);
     console.log(post_import_result); // Log the response
     sleep(0.5);
-
-    console.log(dashId);
-    console.log(dashId);
-
-    console.log(dashId);
-
-    console.log(dashId);
-
-    console.log(dashId);
-
-
-    /*******************     DELETE Dashboard (DELETE request)  *******************/
-    const delete_metadata_dashboard = {
-        url: `${BASE_URL}/dashboard/${dashId}`,
-        tag: "test",
-        job: "user deletes the dashboard",
-        fail: false,
-        status: 200,
-        token: token,
-        };
-    const delete_response = delete_abstract_without_payload(delete_metadata_dashboard);
-    console.log(delete_response); // Journaliser la réponse
-    sleep(0.2);
-
+    
     sleep(1);
 }
