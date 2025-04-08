@@ -1,66 +1,139 @@
-node('k6') {
 
-    // ✅ Define environment variables manually (Scripted Pipelines don't support 'environment' block)
-    def BITBUCKET_REPO = "https://bitbucket.org/ndammak/itona-k6.git"
-    def BITBUCKET_CRED_ID = "bbck"
-    def DOCKER_IMAGE = "optimized-k6"
-    def CREDENTIALS_FILE = "$WORKSPACE/final/device_credentials.json"
+pipeline {
+    agent any
+    environment {
+        DO_TOKEN = credentials('DO_TOKEN')   // DigitalOcean API Token
+        SSH_ID = credentials('SSH_ID')      // DigitalOcean SSH Key ID
+    }
+    stages {
+        stage('Clone Repository') {
+            steps {
+                script {
+                    checkout([
+                        $class: 'GitSCM',
+                        branches: [[name: '*/main']],
+                        userRemoteConfigs: [[
+                            url: 'https://bitbucket.org/ndammak/itona-k6.git',
+                            credentialsId: 'bitbucket_cred'   // Bitbucket credentials stored in Jenkins
+                        ]]
+                    ])
+                }
+            }
+        }
 
-    try {
-        echo "🔄 Fetching code from Bitbucket..."
+        stage('Terraform Init') {
+            steps {
+                sh 'terraform init'
+            }
+        }
+
+        stage('Terraform Apply') {
+            steps {
+                 sh 'terraform plan -var="do_token=$DO_TOKEN" -var="ssh_key_id=$SSH_ID" -out=tfplan.out'
+                archiveArtifacts artifacts: 'tfplan.out', fingerprint: true
+                sh 'terraform apply -auto-approve -var="do_token=$DO_TOKEN" -var="ssh_key_id=$SSH_ID"'
+                echo "VM CREATING."
+            }
+        }
+
+        stage('Extract Droplet IP') {
+            steps {
+                script {
+                    // Extract the droplet IP from Terraform output
+                    def dropletIp = sh(script: "terraform output -raw droplet_ip", returnStdout: true).trim()
+                    env.DROPLET_IP = dropletIp
+                }
+            }
+        }
         
-        checkout([
-            $class: 'GitSCM',
-            branches: [[name: 'main']],
-            userRemoteConfigs: [[
-                url: BITBUCKET_REPO,
-                credentialsId: BITBUCKET_CRED_ID
-            ]]
-        ])
+        
+        stage('Connect to Droplet via SSH') {
+            steps {
+                withCredentials([sshUserPrivateKey(credentialsId: 'DO_SSH_KEY', keyFileVariable: 'SSH_KEY')]) {
+                    sh '''
+                        mkdir -p ~/.ssh
+                        ssh-keyscan -H ${DROPLET_IP} >> ~/.ssh/known_hosts
+                        ssh -i $SSH_KEY -o StrictHostKeyChecking=no root@${DROPLET_IP} 
+                        echo "Connected successfully to ${DROPLET_IP}"
+                    '''
+                }
+            }
+        }
 
-        echo "🔍 Debug: Repository Checkout Completed!"
 
-        echo "🗑 Clearing device_credentials.json..."
-        sh "echo '[]' > ${CREDENTIALS_FILE}"
-        echo "🔍 Debug: device_credentials.json Cleared!"
 
-        echo "🐳 Building Docker image for K6 tests..."
-        sh "docker build -t ${DOCKER_IMAGE} ."
-        echo "🔍 Debug: Docker Build Completed!"
+stage('Clone Repo on VM & Build Docker Image') {
+    steps {
+        withCredentials([
+            sshUserPrivateKey(credentialsId: 'DO_SSH_KEY', keyFileVariable: 'SSH_KEY'),
+            usernamePassword(credentialsId: 'bitbucket_cred', usernameVariable: 'BB_USER', passwordVariable: 'BB_PASS')
+        ]) {
+            sh '''
+                ssh -o StrictHostKeyChecking=no -i $SSH_KEY root@${DROPLET_IP} << EOF
+                    cd ~
+                    git clone https://$BB_USER:$BB_PASS@bitbucket.org/ndammak/itona-k6.git
+                    cd itona-k6/Docker
+                    docker build -t xk6-images .
+                EOF
+            '''
+        }
+    }
+}
 
-        echo "📡 Running K6 device_test.js scenario..."
-        sh """
-            docker run --rm \
-            -v $WORKSPACE/final:/app/final \
-            ${DOCKER_IMAGE} run /app/final/Device_test.js
-        """
-        echo "🔍 Debug: K6 Device Test Completed!"
 
-        echo "📜 Contents of device_credentials.json after K6 test:"
-        sh "cat ${CREDENTIALS_FILE}"
+        stage('Archive K6 Test Script') {
+            steps {
+                withCredentials([sshUserPrivateKey(credentialsId: 'DO_SSH_KEY', keyFileVariable: 'SSH_KEY')]) {
+                    sh '''
+                        ssh -o StrictHostKeyChecking=no -i $SSH_KEY root@${DROPLET_IP} << 'EOF'
+                            cd ~/itona-k6
+                            docker run --rm -v $(pwd):/app xk6-images archive k6/DeviceManagement/Mqtt_connection.js
+                        EOF
+                    '''
+                }
+            }
+        }
 
-        echo "🛠️ Fixing JSON output with Node.js formatter..."
-        sh """
-            docker run --rm \
-            -v \$WORKSPACE/final:/app \
-            node:18-alpine \
-            node /app/JsonFormatter.js
-        """
-        echo "🔍 Debug: JSON Fix Completed!"
+       stage('Create ConfigMap & Apply Test') {
+    steps {
+        withCredentials([sshUserPrivateKey(credentialsId: 'DO_SSH_KEY', keyFileVariable: 'SSH_KEY')]) {
+            sh '''  
+                ssh -o StrictHostKeyChecking=no -i $SSH_KEY root@${DROPLET_IP} << 'EOF'
+                    cd ~/itona-k6
 
-        echo "📡 Running K6 mqtt scenario..."
-        sh """
-            docker run --rm \
-            -v $WORKSPACE/final:/app/final \
-            ${DOCKER_IMAGE} run /app/final/Mqtt_connection.js
-        """
-        echo "🔍 Debug: MQTT Test Completed!"
+                    echo "Creating ConfigMap..."
+                    minikube kubectl -- create configmap mqtt-test --from-file=archive.tar -o yaml --dry-run=client | minikube kubectl -- apply -f -
 
-        echo "🎉 All K6 and MQTT Tests Passed!"
-    } catch (Exception e) {
-        echo "❌ Some tests failed! Error: ${e.getMessage()}"
-        currentBuild.result = 'FAILURE'
-    } finally {
-        echo "✅ Pipeline execution completed!"
+                    echo "Applying K6 test..."
+                    minikube kubectl -- apply -f k6/DeviceManagement/mqtt.yml
+
+                    echo "Waiting 5 seconds for pod to be Running..."
+                    sleep 5
+
+                    POD=$(minikube kubectl -- get pods -l app=k6 -o jsonpath="{.items[?(@.status.phase=='Running')].metadata.name}")
+
+                    if [ -z "$POD" ]; then
+                      echo "❌ No running pod found after 5 seconds."
+                      exit 1
+                    fi
+
+                    echo "✅ Found running pod: $POD"
+                    echo "Forwarding port 5666..."
+                    nohup minikube kubectl -- port-forward pod/$POD 5666:5666 &
+                EOF
+            '''
+        }
+    }
+}
+
+
+
+
+    }
+
+    post {
+        always {
+            echo "Pipeline execution completed!"
+        }
     }
 }

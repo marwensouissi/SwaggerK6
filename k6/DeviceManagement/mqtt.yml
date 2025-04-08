@@ -1,0 +1,20 @@
+apiVersion: k6.io/v1alpha1
+kind: TestRun
+metadata:
+  name: k6-test-with-dashboard
+  labels:
+    app: k6-ui
+spec:
+  parallelism: 1
+  script:
+    configMap:
+      name: mqtt-test
+      file: archive.tar
+  runner:
+    image: k6-mqtt-dashboard
+    imagePullPolicy: Never
+    env:
+      - name: K6_WEB_DASHBOARD
+        value: "true"
+      - name: K6_WEB_DASHBOARD_EXPORT
+        value: "/tmp/html-report.html"

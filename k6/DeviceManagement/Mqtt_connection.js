@@ -4,118 +4,112 @@ import { SharedArray } from 'k6/data';
 
 // ✅ K6 Load Testing Options
 export let options = {
-    vus: 4,        // Number of Virtual Users (Each VU represents a different device)
-    duration: '60s' // Run for 60 seconds
+    vus: 4,
+    duration: '1m', // you can increase this
 };
 
 // ✅ Load credentials from JSON file
 const credentialsData = new SharedArray('device_credentials', function () {
-    let data;
     try {
-        data = JSON.parse(open('./device_credentials.json'));
+        return JSON.parse(open('./device_credentials.json'));
     } catch (error) {
-        console.error("❌ Failed to load credentials file!", error);
+        console.error("❌ Failed to load credentials file:", error);
         return [];
     }
-    return Array.isArray(data) ? data : [];
 });
 
 // ✅ Ensure credentials exist
 if (credentialsData.length === 0) {
-    throw new Error("❌ No credentials available! Ensure `device_credentials.json` is not empty.");
+    throw new Error("❌ No credentials found in device_credentials.json");
 }
 
-// ✅ MQTT Broker Configuration
+// ✅ MQTT Config
 const broker = "mqtt://dev-itona.xyz";
-const port = "1883";  // MQTT Port
-const password = "YourPasswordIfRequired"; // Set a password if needed
+const port = "1883";
+const password = "YourPasswordIfRequired";
 
-// ✅ Global MQTT Clients Storage (Each VU gets its own connection)
-let publishers = {};
+// ✅ MQTT Clients Storage
+const publishers = {};
 
-// ✅ MQTT Connection Setup - Run Once Per VU (Before Default Function)
-console.log("🚀 Initializing MQTT connections for all Virtual Users...");
+// ✅ Setup connections outside of default
+console.log("🚀 Global Setup: Initializing MQTT connections...");
 
 for (let i = 1; i <= options.vus; i++) {
     const vuIndex = (i - 1) % credentialsData.length;
-    const credentials = credentialsData[vuIndex];
+    const cred = credentialsData[vuIndex];
 
-    if (!credentials || !credentials.credentialsId) {
-        console.error(`❌ VU ${i} failed to retrieve credentialsId.`);
-        continue;
-    }
-
-    const credentialsId = credentials.credentialsId;
+    const credentialsId = cred.credentialsId || `default-${i}`;
     const clientId = `k6-client-${i}`;
 
-    console.log(`✅ VU ${i} assigned credentialsId: ${credentialsId}`);
+    console.log(`✅ VU ${i} using credentialsId: ${credentialsId}`);
 
     try {
-        publishers[i] = new mqtt.Client(
-            [`${broker}:${port}`], 
-            credentialsId,  
-            password, 
-            false,  
-            clientId,  
-            5000, 
-            "",  
-            "",  
-            "", 
+        const client = new mqtt.Client(
+            [`${broker}:${port}`],
+            credentialsId,
+            password,
+            false,
+            clientId,
+            5000,
+            "",
+            "",
+            "",
             {
                 sentBytesLabel: "mqtt_sent_bytes",
                 receivedBytesLabel: "mqtt_received_bytes",
                 sentMessagesCountLabel: "mqtt_sent_messages_count",
                 receivedMessagesCountLabel: "mqtt_received_messages_count",
             },
-            false, 
+            false,
             "TLS 1.2"
         );
 
-        console.log(`🚀 VU ${i} Connecting to MQTT Broker...`);
-        publishers[i].connect();
-        console.log(`✅ VU ${i} Connected to MQTT!`);
-    } catch (error) {
-        console.error(`❌ VU ${i} Connection Failed!`, error);
+        client.connect();
+        console.log(`📡 VU ${i} connected to MQTT broker.`);
+        publishers[i] = client;
+    } catch (err) {
+        console.error(`❌ Failed to connect VU ${i}:`, err);
     }
 }
 
-// ✅ Main Test Execution - Runs Per VU
+// ✅ Main test per VU
 export default function () {
-    if (!publishers[__VU]) {
-        console.error(`❌ MQTT Publisher not initialized for VU ${__VU}!`);
+    const client = publishers[__VU];
+    if (!client) {
+        console.error(`❌ No client found for VU ${__VU}`);
         return;
     }
 
-    const credentialsId = credentialsData[(__VU - 1) % credentialsData.length].credentialsId;
-    const deviceTopic = `v1/devices/me/telemetry`;  // Modify if needed per device
+    const credIndex = (__VU - 1) % credentialsData.length;
+    const credentialsId = credentialsData[credIndex].credentialsId;
+    const deviceTopic = "v1/devices/me/telemetry";
 
-    for (let i = 0; i < 5; i++) {  // Send 5 messages per second
-        let payload = JSON.stringify({
+    for (let i = 0; i < 5; i++) {
+        const payload = JSON.stringify({
             device_id: credentialsId,
             temperature: (Math.random() * 50).toFixed(2),
             humidity: (Math.random() * 100).toFixed(2),
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
         });
 
         try {
-            console.log(`📡 VU ${__VU} Publishing to topic: ${deviceTopic}`);
-            publishers[__VU].publish(deviceTopic, 1, payload, true, 5000);  // Retain = true
-            console.log(`✅ VU ${__VU} Message Sent: ${payload}`);
-        } catch (error) {
-            console.error(`❌ VU ${__VU} Publish Failed!`, error);
+            console.log(`📤 VU ${__VU} publishing to ${deviceTopic}`);
+            client.publish(deviceTopic, 1, payload, true, 5000);
+        } catch (err) {
+            console.error(`❌ Failed to publish from VU ${__VU}:`, err);
         }
 
-        sleep(0.2);  // 5 messages per second (1/5 = 0.2s per message)
+        sleep(0.2); // 5 messages per second
     }
 }
 
-// ✅ Cleanup: Close All MQTT Connections at End
+// ✅ Clean up MQTT connections
 export function teardown() {
-    console.log("🔌 Closing all MQTT Connections...");
+    console.log("🔌 Teardown: Closing MQTT connections...");
     for (let i in publishers) {
         if (publishers[i]) {
             publishers[i].close();
-            console.log(`✅ VU ${i} Disconnected from MQTT.`);
+            console.log(`✅ VU ${i} disconnected.`);
         }
     }
 }

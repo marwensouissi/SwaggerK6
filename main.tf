@@ -1,77 +1,92 @@
-terraform {
-  required_version = ">= 1.0.0"
+	terraform {
+	  required_providers {
+	    digitalocean = {
+	      source  = "digitalocean/digitalocean"
+	      version = "~> 2.49.1"
+	    }
+	  }
+	}
 
-  required_providers {
-    digitalocean = {
-      source  = "digitalocean/digitalocean"
-      version = "~> 2.0"
-    }
-  }
-}
+	provider "digitalocean" {
+	  token = var.do_token
+	}
 
-provider "digitalocean" {
-  token = var.do_token
-}
+	variable "do_token" {
+	  description = "DigitalOcean API Token"
+	  type        = string
+	  sensitive   = true
+	}
 
-variable "do_token" {
-  description = "DigitalOcean API Token"
-  type        = string
-  sensitive   = true
-}
+	variable "ssh_key_id" {
+	  description = "DigitalOcean SSH Key ID"
+	  type        = string
+	}
+
+	variable "droplet_name" {
+	  description = "Name of the Droplet"
+	  type        = string
+	  default     = "k6-vm"
+	}
+
+	variable "region" {
+	  description = "Region where Droplet will be created"
+	  type        = string
+	  default     = "nyc3"
+	}
+
+	variable "size" {
+	  description = "Droplet size"
+	  type        = string
+	  default     = "s-2vcpu-4gb"
+	}
+
+	variable "image" {
+	  description = "Droplet base image"
+	  type        = string
+	  default     = "ubuntu-22-04-x64"
+	}
+
+	# ===============================
+	# RESOURCE: DROPLET
+	# ===============================
+
+	resource "digitalocean_droplet" "k6_vm" {
+	  name     = var.droplet_name
+	  region   = var.region
+	  size     = var.size
+	  image    = var.image
+	  ssh_keys = [var.ssh_key_id]
 
 
+	  connection {
+	    type        = "ssh"
+	    user        = "root"
+	    host        = self.ipv4_address
+	    private_key = file("~/.ssh/id_rsa")
+	    timeout     = "3m"
 
+	  }
 
+	provisioner "file" {
+	    source      = "script.sh"
+	    destination = "/tmp/script.sh"
+	  }
 
-variable "droplet_name" {
-  description = "Name of the DigitalOcean Droplet"
-  type        = string
-  default     = "k6-slave"
-}
+	provisioner "remote-exec" {
+	  inline = [
+	    "sleep 120",
+	    "while sudo fuser /var/lib/dpkg/lock >/dev/null 2>&1 || sudo fuser /var/lib/apt/lists/lock >/dev/null 2>&1; do echo 'Waiting for apt...'; sleep 5; done",
+	    "chmod +x /tmp/script.sh",
+	    "/tmp/script.sh"
+	  ]
+	}
+	  }
 
-variable "region" {
-  description = "DigitalOcean Region"
-  type        = string
-  default     = "nyc3"  # Change this based on your location
-}
+	# ===============================
+	# OUTPUT
+	# ===============================
 
-variable "size" {
-  description = "Droplet Size"
-  type        = string
-  default     = "s-2vcpu-4gb"  # 2 vCPUs, 4GB RAM
-}
-
-variable "image" {
-  description = "Base Image for Droplet"
-  type        = string
-  default     = "ubuntu-22-04-x64"
-}
-
-# Create the VM on DigitalOcean
-resource "digitalocean_droplet" "k6_slave" {
-  name   = var.droplet_name
-  region = var.region
-  size   = var.size
-  image  = var.image
-#   ssh_keys = [var.ssh_key]
-
-#   provisioner "remote-exec" {
-#     connection {
-#       type        = "ssh"
-#       user        = "root"
-#       private_key = file("~/.ssh/id_rsa")
-#       host        = self.ipv4_address
-#     }
-
-#     inline = [
-#       "apt update -y",
-#       "apt install -y ansible"
-#     ]
-#   }
-}
-
-# Output the assigned IP address
-output "droplet_ip" {
-  value = digitalocean_droplet.k6_slave.ipv4_address
-}
-
+	output "droplet_ip" {
+	  description = "Public IP of the created droplet"
+	  value       = digitalocean_droplet.k6_vm.ipv4_address
+	}
