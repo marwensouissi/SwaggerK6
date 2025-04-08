@@ -26,11 +26,6 @@ variable "ssh_key_id" {
   type        = string
 }
 
-variable "ssh_private_key_path" {
-  description = "Path to SSH private key used to connect to Droplet"
-  type        = string
-  default     = "~/.ssh/id_rsa"
-}
 
 variable "droplet_name" {
   description = "Name of the Droplet"
@@ -55,6 +50,12 @@ variable "image" {
   type        = string
   default     = "ubuntu-22-04-x64"
 }
+  variable "ssh_private_key" {
+  description = "Content of the private SSH key"
+  type        = string
+  sensitive   = true
+}
+
 
 # ===============================
 # RESOURCE: DROPLET
@@ -71,9 +72,12 @@ resource "digitalocean_droplet" "k6_vm" {
     type        = "ssh"
     user        = "root"
     host        = self.ipv4_address
-    private_key = file(pathexpand(var.ssh_private_key_path))
+    private_key = var.ssh_private_key
     timeout     = "3m"
   }
+
+
+
 
   provisioner "file" {
     source      = "script.sh"
