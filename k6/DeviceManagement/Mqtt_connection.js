@@ -5,7 +5,7 @@ import { SharedArray } from 'k6/data';
 // ✅ K6 Load Testing Options
 export let options = {
     vus: 4,
-    duration: '1m', // you can increase this
+    duration: '10m', // you can increase this
 };
 
 // ✅ Load credentials from JSON file

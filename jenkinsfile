@@ -14,7 +14,7 @@ pipeline {
                         branches: [[name: '*/main']],
                         userRemoteConfigs: [[
                             url: 'https://bitbucket.org/ndammak/itona-k6.git',
-                            credentialsId: 'bitbucket_cred'   // Bitbucket credentials stored in Jenkins
+                            credentialsId: 'bbck'   // Bitbucket credentials stored in Jenkins
                         ]]
                     ])
                 }
@@ -27,14 +27,34 @@ pipeline {
             }
         }
 
-        stage('Terraform Apply') {
-            steps {
-                 sh 'terraform plan -var="do_token=$DO_TOKEN" -var="ssh_key_id=$SSH_ID" -out=tfplan.out'
-                archiveArtifacts artifacts: 'tfplan.out', fingerprint: true
-                sh 'terraform apply -auto-approve -var="do_token=$DO_TOKEN" -var="ssh_key_id=$SSH_ID"'
-                echo "VM CREATING."
-            }
+stage('Terraform Init + Plan + Apply') {
+    steps {
+        withCredentials([
+            string(credentialsId: 'DO_TOKEN', variable: 'DO_TOKEN'),
+            string(credentialsId: 'SSH_ID', variable: 'SSH_ID'),
+            sshUserPrivateKey(credentialsId: 'DO_SSH_KEY', keyFileVariable: 'SSH_KEY')
+        ]) {
+            sh '''
+                echo "🔧 Terraform Init"
+                terraform init
+
+                echo "📦 Terraform Plan"
+                terraform plan \
+                  -var="do_token=${DO_TOKEN}" \
+                  -var="ssh_key_id=${SSH_ID}" \
+                  -var="ssh_private_key=$(cat ${SSH_KEY})" \
+                  -out=tfplan.out
+
+                echo "🚀 Terraform Apply"
+                terraform apply -auto-approve \
+                  -var="do_token=${DO_TOKEN}" \
+                  -var="ssh_key_id=${SSH_ID}" \
+                  -var="ssh_private_key=$(cat ${SSH_KEY})"
+            '''
         }
+    }
+}
+
 
         stage('Extract Droplet IP') {
             steps {
@@ -66,49 +86,36 @@ stage('Clone Repo on VM & Build Docker Image') {
     steps {
         withCredentials([
             sshUserPrivateKey(credentialsId: 'DO_SSH_KEY', keyFileVariable: 'SSH_KEY'),
-            usernamePassword(credentialsId: 'bitbucket_cred', usernameVariable: 'BB_USER', passwordVariable: 'BB_PASS')
+            usernamePassword(credentialsId: 'bbck', usernameVariable: 'BB_USER', passwordVariable: 'BB_PASS')
         ]) {
             sh '''
-                ssh -o StrictHostKeyChecking=no -i $SSH_KEY root@${DROPLET_IP} << EOF
+                ssh -o StrictHostKeyChecking=no -i $SSH_KEY root@${DROPLET_IP} << 'EOF'
                     cd ~
                     git clone https://$BB_USER:$BB_PASS@bitbucket.org/ndammak/itona-k6.git
                     cd itona-k6/Docker
-                    docker build -t xk6-images .
-                EOF
+                    docker build -f k6-mqtt.Dockerfile -t xk6-images .
+                    docker images
             '''
         }
     }
 }
 
-
-        stage('Archive K6 Test Script') {
-            steps {
-                withCredentials([sshUserPrivateKey(credentialsId: 'DO_SSH_KEY', keyFileVariable: 'SSH_KEY')]) {
-                    sh '''
-                        ssh -o StrictHostKeyChecking=no -i $SSH_KEY root@${DROPLET_IP} << 'EOF'
-                            cd ~/itona-k6
-                            docker run --rm -v $(pwd):/app xk6-images archive k6/DeviceManagement/Mqtt_connection.js
-                        EOF
-                    '''
-                }
-            }
-        }
-
-       stage('Create ConfigMap & Apply Test') {
+stage('Archive K6 Test Script') {
     steps {
         withCredentials([sshUserPrivateKey(credentialsId: 'DO_SSH_KEY', keyFileVariable: 'SSH_KEY')]) {
-            sh '''  
+            sh '''
                 ssh -o StrictHostKeyChecking=no -i $SSH_KEY root@${DROPLET_IP} << 'EOF'
-                    cd ~/itona-k6
-
-                    echo "Creating ConfigMap..."
-                    minikube kubectl -- create configmap mqtt-test --from-file=archive.tar -o yaml --dry-run=client | minikube kubectl -- apply -f -
-
-                    echo "Applying K6 test..."
-                    minikube kubectl -- apply -f k6/DeviceManagement/mqtt.yml
-
-                    echo "Waiting 5 seconds for pod to be Running..."
-                    sleep 5
+                    cd ~/itona-k6/k6/DeviceManagement
+                    echo "Current directory: $(pwd)"
+                    ls -la
+                    docker run --rm -v $(pwd):/app xk6-images:latest archive /app/Mqtt_connection.js
+                     echo "Creating ConfigMap..."
+                    minikube kubectl -- create configmap mqtt-test --from-file=archive.tar
+                    minikube image load xk6-images:latest
+                    minikube kubectl -- apply -f mqtt.yml
+                    minikube kubectl get pods
+                    
+                     sleep 5
 
                     POD=$(minikube kubectl -- get pods -l app=k6 -o jsonpath="{.items[?(@.status.phase=='Running')].metadata.name}")
 
@@ -120,14 +127,10 @@ stage('Clone Repo on VM & Build Docker Image') {
                     echo "✅ Found running pod: $POD"
                     echo "Forwarding port 5666..."
                     nohup minikube kubectl -- port-forward pod/$POD 5666:5666 &
-                EOF
             '''
         }
     }
 }
-
-
-
 
     }
 
