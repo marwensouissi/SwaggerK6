@@ -1,6 +1,6 @@
 import http from 'k6/http';
 import { check, sleep } from 'k6';
-import { get_abstract_with_payload, post_abstract_with_payload, put_abstract_with_payload, delete_abstract_without_payload } from '../../utils/abstract.js';
+import {post_abstract_with_payload, delete_abstract_without_payload } from '../../utils/abstract.js';
 import { login } from '../AuthManagement/auth.js';
 import { randomString } from 'https://jslib.k6.io/k6-utils/1.2.0/index.js';
 
@@ -10,7 +10,7 @@ export default function workflow() {
     // ************* Login *********************//
     const token = login("henchirnouha02@gmail.com", "123456789");
 
-    //************* CREATE Chain (POST request) *********************//
+    //************* CREATE or EDIT Chain (POST request) *********************//
     const post_metadata_chain = {
         url: `${BASE_URL}/vidAnalChain`,
         payload: {
@@ -32,7 +32,7 @@ export default function workflow() {
             "connections": [] 
           },
         tag: "test",
-        job: "user creates a vidAnalChain",
+        job: "user creates or edits a vidAnalChain",
         fail: false,
         status: 200,
         token: token,
@@ -45,36 +45,24 @@ export default function workflow() {
     sleep(0.5);
 
 
-    //************* UPDATE Chain (POST request) *********************//
-    const update_metadata_chain = {
-      url: `${BASE_URL}/vidAnalChain`,
-      payload: {
-        "tenantId": {
-          "entityType": "TENANT",
-          "id": "aeddc290-ef6c-11ef-a2cf-8be4056be751"
-        },
-        "name": `edit-${randomString(8)}`,
-        "description": `edit-${randomString(30)}`,
-        "additionalInfo": {
-          "description": `edit-${randomString(30)}`
-        },
-        "debugMode": null,
-        "type": "CORE",
-        "root": false,
-        "nodes": {
-          "nodesList": []
-        },
-        "connections": []
+    // **********************  DELETE vidanalytic  ********************* //
+    const delete_metadata_chain = {
+      url: `${BASE_URL}/vidAnalChain/${chainId}`,
+      headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
       },
-      tag: "test",
-      job: "user updates a vidAnalChain",
+      tag: "delete_request",
+      job: "Delete an item",
       fail: false,
       status: 200,
       token: token,
-  };
-  const update_chain_response = post_abstract_with_payload(update_metadata_chain);
-  console.log(update_chain_response); // Journaliser la réponse
-  sleep(0.5);
+    };
+    const delete_response = delete_abstract_without_payload(delete_metadata_chain);
+    console.log(`DELETE Response: ${JSON.stringify(delete_response)}`);
+    sleep(0.5);
+
+    sleep(0.1);
 
 }
 

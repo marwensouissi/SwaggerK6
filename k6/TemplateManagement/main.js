@@ -14,19 +14,19 @@ export default function workflow() {
     const post_metadata_template = {
         url: `${BASE_URL}/notification/template`,
         payload: {
-            "name": randomString(10), // Génère un nom aléatoire de 10 caractères
+            "name": randomString(10), // Génère un nom aléatoire 
             "notificationType": "ALARM",
             "configuration": {
                 "selectedMethod": "WEB",
                 "deliveryMethodsTemplates": {
                     "WEB": {
-                        "subject": randomString(15), // Génère un sujet aléatoire de 15 caractères
-                        "body": randomString(20), // Génère un corps aléatoire de 20 caractères
+                        "subject": randomString(15), // Génère un sujet aléatoire 
+                        "body": randomString(20), 
                         "method": "WEB"
                     },
                     "MOBILE_APP": {
-                        "subject": randomString(15), // Génère un sujet aléatoire de 15 caractères
-                        "body": randomString(20), // Génère un corps aléatoire de 20 caractères
+                        "subject": randomString(15), 
+                        "body": randomString(20), 
                         "method": "MOBILE_APP"
                     }
                 }
@@ -39,10 +39,11 @@ export default function workflow() {
         token: token,
     };
     const post_template_result = post_abstract_with_payload(post_metadata_template);
-    console.log(post_template_result); // Journaliser la réponse
+    console.log("create template : ",post_template_result); // Journaliser la réponse
   
     // Declare templateID 
     const templateID = post_template_result.data.id.id;
+    console.log("Template ID: ", templateID); // Log the template ID for further use
     sleep(0.5);
 
     // *********************     COPY Template (POST request)  *********************// 
@@ -74,8 +75,23 @@ export default function workflow() {
         token: token,
     };
     const post_copy_template_response = post_abstract_with_payload(post_copy_template);
-    console.log(post_copy_template_response); // Journaliser la réponse
+    console.log("copy template : ",post_copy_template_response); // Journaliser la réponse
     sleep(0.5);
+
+    //*********************************** DELETE Template *************************************//
+    const delete_template = {
+        url: `${BASE_URL}/notification/template/${templateID}`,
+        tag: "test",
+        job: "delete a template",
+        fail: false,
+        status: 200,
+        token: token,
+    };
+    const delete_template_result = delete_abstract_without_payload(delete_template);
+    console.log("delete template : ",delete_template_result); // Journaliser la réponse
+    sleep(0.5);
+
+    sleep(1);
 
 
 

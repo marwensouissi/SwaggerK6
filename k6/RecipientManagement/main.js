@@ -17,7 +17,7 @@ export default function workflow() {
            "name": `test-${randomString(10)}`, 
             "configuration": {
                 "type": "PLATFORM_USERS",
-                "description": "testt",
+                "description":randomString(20),
                 "usersFilter": {
                     "type": "USER_LIST",
                     "usersIds": ["aee340d0-ef6c-11ef-a2cf-8be4056be751"]
@@ -31,7 +31,7 @@ export default function workflow() {
         token: token,
     };
     const post_recipient_response = post_abstract_with_payload(post_metadata_recipient);
-    console.log(post_recipient_response); // Journaliser la réponse
+    console.log("create recipient : ",post_recipient_response); // Journaliser la réponse
   
     // Declare notificationID 
     const notificationID = post_recipient_response.data.id.id;
@@ -58,8 +58,8 @@ export default function workflow() {
         token: token,
         };
     const update_recipient_response = post_abstract_with_payload(update_metadata_recipient);
-    console.log(update_recipient_response);
-    sleep(0.2);
+    console.log("update recipient : ",update_recipient_response);
+    sleep(0.5);
 
   
   
@@ -73,7 +73,7 @@ export default function workflow() {
         token: token,
         };
     const get_list_response = get_abstract_without_payload(get_list_metadata);
-    console.log(get_list_response);
+    console.log("get list : ",get_list_response);
     sleep(0.5);
 
 
@@ -110,8 +110,22 @@ export default function workflow() {
         token: token,
     };
     const post_copy_response = post_abstract_with_payload(post_copy_recipient);
-    console.log(post_copy_response);
+    console.log("copy recipient:",post_copy_response);
     sleep(0.5);
+
+    //*************  DELETE recipient (DELETE request) *********************//
+    const delete_notification_metadata = {
+        url: `${BASE_URL}/notification/target/${notificationID}`,
+        tag: 'test',
+        job: 'user deletes a recipient',
+        fail: false,
+        status: 200,
+        token: token,
+        };
+    const delete_notification_result = delete_abstract_without_payload(delete_notification_metadata);
+    console.log("delete recipient:",delete_notification_result);    
+    sleep(0.5);
+    
     sleep(1);
 
   }

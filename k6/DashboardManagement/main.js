@@ -1,6 +1,6 @@
 import http from 'k6/http';
 import { check, sleep } from 'k6';
-import { get_abstract_with_payload, post_abstract_with_payload, put_abstract_with_payload, delete_abstract_without_payload } from '../../utils/abstract.js';
+import { post_abstract_with_payload, delete_abstract_without_payload, get_abstract_without_payload } from '../../utils/abstract.js';
 import { login } from '../AuthManagement/auth.js';
 import { randomString } from 'https://jslib.k6.io/k6-utils/1.2.0/index.js';
 
@@ -10,17 +10,17 @@ export default function workflow() {
     // ************* Login *********************//
     const token = login("henchirnouha02@gmail.com", "123456789");
 
-    //************* CREATE Dashboard (POST request) *********************//
+    //************* CREATE or UPDATE Dashboard (POST request) *********************//
     const post_metadata_dashboard = {
         url: `${BASE_URL}/dashboard`,
         payload: {
             "title": `Dashboard-${randomString(8)}`, // Titre aléatoire
             "image": null,
             "additionalInfo": {
-                "info": randomString(10), // Information aléatoire
+                "info": randomString(10), 
             },
             "configuration": {
-                "setting": randomString(5), // Configuration aléatoire
+                "setting": randomString(5), 
             },
         },
         tag: "test",
@@ -30,45 +30,23 @@ export default function workflow() {
         token: token,
     };
     const post_dashboard_result = post_abstract_with_payload(post_metadata_dashboard);
-    console.log(post_dashboard_result); // Journaliser la réponse
+    console.log("create dashboard : ",post_dashboard_result); // Journaliser la réponse
 
     const dashId = post_dashboard_result.data.id.id;
+    console.log("Dashboard ID: ", dashId); // Log the dashboard ID 
     sleep(0.5);
 
-    // ********************* UPDATE Dashboard (POST request) *********************//
-    const update_metadata_dashboard = {
-        url: `${BASE_URL}/dashboard`,
-        payload: {
-            "id": { "entityType": "DASHBOARD", "id": dashId },
-            "title": `Updated-${randomString(8)}`, // Titre mis à jour aléatoire
-            "image": null,
-            "additionalInfo": {
-                "info": randomString(10), // Information mise à jour aléatoire
-            },
-            "configuration": {
-                "setting": randomString(5), // Configuration mise à jour aléatoire
-            },
-        },
-        tag: "test",
-        job: "user updates the dashboard",
-        fail: false,
-        status: 200,
-        token: token,
-    };
-    const update_response = post_abstract_with_payload(update_metadata_dashboard);
-    console.log(update_response); // Journaliser la réponse
-    sleep(0.2);
 
     //******************* IMPORT Dashboard (POST request) *********************//
     const post_import_dashboard = {
         url: `${BASE_URL}/dashboard`,
         payload: {
-            "title": `Import-${randomString(8)}`, // Titre aléatoire pour l'import
+            "title": `Import-${randomString(8)}`, 
             "image": null,
             "mobileHide": Math.random() < 0.5, // Booléen aléatoire
             "mobileOrder": Math.floor(Math.random() * 100), // Nombre aléatoire
-            "itemIconInNavbar": randomString(5), // Icône aléatoire
-            "subFolder": randomString(6), // Sous-dossier aléatoire
+            "itemIconInNavbar": randomString(5), 
+            "subFolder": randomString(6), 
             "itemOrderInNavbar": Math.floor(Math.random() * 10),
             "itemOrderInSubFolder": Math.floor(Math.random() * 10),
             "installed": Math.random() < 0.5,
@@ -133,14 +111,43 @@ export default function workflow() {
             "name": `Dashboard-${randomString(8)}`
         },
         tag: "test",
-        job: "user import a dashboard",
+        job: "user imports a dashboard",
         fail: false,
         status: 200,
         token: token,
     };
     const post_import_result = post_abstract_with_payload(post_import_dashboard);
-    console.log(post_import_result); // Log the response
+    console.log("import dashboard : ",post_import_result); // Log the response
     sleep(0.5);
+
+
+    //************* EXPORT dashboard (GET request) *********************//
+        const get_metadata_dashboard = {
+            url: `${BASE_URL}/dashboard/${dashId}`,
+            tag: "test",
+            job: "user exports a dashboard",
+            fail: false,
+            status: 200,
+            token: token,
+        };
+        const get_dashboard_result = get_abstract_without_payload(get_metadata_dashboard);
+        console.log("export dashboard : ",get_dashboard_result); // Journaliser la réponse
+        sleep(0.5);
+
+
+    // ********************* DELETE Dashboard (DELETE request) *********************//
+    const delete_metadata_dashboard = {
+        url: `${BASE_URL}/dashboard/${dashId}`,
+        tag: "test",
+        job: "user deletes a dashboard",
+        fail: false,
+        status: 200,
+        token: token,
+        };
+    const delete_response = delete_abstract_without_payload(delete_metadata_dashboard);
+    console.log("delete dashboard : ",delete_response); // Journaliser la réponse
+    sleep(0.5); 
+
     
     sleep(1);
 }
