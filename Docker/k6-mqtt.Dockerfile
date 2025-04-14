@@ -12,6 +12,7 @@ RUN /go/bin/xk6 build v0.54.0 \
     --with github.com/pmalhaire/xk6-mqtt@latest \
     --with github.com/avitalique/xk6-file@latest \
     --with github.com/grafana/xk6-dashboard@latest \
+    --with github.com/grafana/xk6-output-prometheus-remote@latest\
     --output k6
 
 # Stage 2: Create lightweight runtime environment
