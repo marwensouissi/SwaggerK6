@@ -1,0 +1,41 @@
+{
+    "id": null,
+    "title": "K6 Operator Metrics",
+    "tags": ["k6", "performance"],
+    "timezone": "browser",
+    "schemaVersion": 16,
+    "panels": [
+      {
+        "title": "Virtual Users",
+        "type": "graph",
+        "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+        "targets": [
+          {
+            "expr": "k6_vus",
+            "legendFormat": "{{test_name}}",
+            "format": "time_series"
+          }
+        ],
+        "yaxes": [
+          { "format": "short", "label": "VUs" },
+          { "format": "short" }
+        ]
+      },
+      {
+        "title": "Test Duration",
+        "type": "graph",
+        "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+        "targets": [
+          {
+            "expr": "k6_test_duration_seconds",
+            "legendFormat": "{{test_name}}",
+            "format": "time_series"
+          }
+        ],
+        "yaxes": [
+          { "format": "s", "label": "Seconds" },
+          { "format": "short" }
+        ]
+      }
+    ]
+  }
