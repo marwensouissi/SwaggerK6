@@ -15,6 +15,6 @@ spec:
     imagePullPolicy: Never
     env:
       - name: K6_PROMETHEUS_RW_SERVER_URL
-        value: "http://prometheus-server.default.svc.cluster.local/api/v1/write"
+        value: http://prometheus.monitoring.svc.cluster.local:9090/api/v1/write  # adapt to your Prometheus service
       - name: K6_PROMETHEUS_RW_TREND_STATS
         value: "p(95),p(99),max,min"
