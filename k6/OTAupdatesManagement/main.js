@@ -35,8 +35,8 @@ export default function workflow() {
     const post_package_response = post_abstract_with_payload(post_metadata_package);
     console.log("create package : ", post_package_response); 
 
-    const packageID = post_package_response.data.id.id; // Récupérer l'ID de la notification créée
-    console.log(`Package ID: ${packageID}`); 
+    const packageID = post_package_response.data.id.id; // Extract the package ID from the response
+    console.log(`Package ID: ${packageID}`); // Log the package ID
     sleep(0.5);
 
 

@@ -39,10 +39,10 @@ export default function workflow() {
         token: token,
     };
     const post_compute_device_result = post_abstract_with_payload(post_metadata_compute_device);
-    console.log(post_compute_device_result); // Journaliser la réponse
+    console.log(post_compute_device_result); 
 
-    const computeDeviceID = post_compute_device_result.data.id.id;
-    console.log(`Compute device ID: ${computeDeviceID}`);
+    const computeDeviceID = post_compute_device_result.data.id.id; // Extract the device ID from the response
+    console.log(`Compute device ID: ${computeDeviceID}`); // Log the device ID
     sleep(0.5);
 
     //************* DOWNLOAD configration file (GET request) *********************//
@@ -55,7 +55,7 @@ export default function workflow() {
         token: token,
     };
     const get_configFile_result = get_abstract_without_payload(get_metadata_configFile);
-    console.log(get_configFile_result); // Journaliser la réponse
+    console.log(get_configFile_result); 
     sleep(0.5);
 
     //************* DELETE Compute Device (DELETE request) *********************//
@@ -68,7 +68,7 @@ export default function workflow() {
         token: token,
     };
     const delete_compute_device_result = delete_abstract_without_payload(delete_metadata_compute_device);       
-    console.log(delete_compute_device_result); // Journaliser la réponse
+    console.log(delete_compute_device_result); 
     sleep(0.5);
 
     sleep(1);

@@ -31,20 +31,20 @@ export default function workflow() {
         token: token,
     };
     const post_recipient_response = post_abstract_with_payload(post_metadata_recipient);
-    console.log("create recipient : ",post_recipient_response); // Journaliser la réponse
+    console.log("create recipient : ",post_recipient_response); 
   
-    // Declare notificationID 
-    const notificationID = post_recipient_response.data.id.id;
+    const notificationID = post_recipient_response.data.id.id; // extract the recipient ID from the response
+    console.log(`Recipient ID: ${notificationID}`); // Log the recipient ID
     sleep(0.5);
     
     // *********************     UPDATE Recipient (POST request)   *********************//         
     const update_metadata_recipient = {
         url: `${BASE_URL}/notification/target`,
         payload: {
-            "id": { "entityType": "NOTIFICATION_TARGET", "id": notificationID }, // Use the dynamic ID
+            "id": { "entityType": "NOTIFICATION_TARGET", "id": notificationID }, 
             "createdTime": 1741876917921,
             "tenantId": { "entityType": "TENANT", "id": "aeddc290-ef6c-11ef-a2cf-8be4056be751" },
-            "name": `test-updated-${randomString(5)}`, // Generate a unique name
+            "name": `updated-${randomString(5)}`, 
             "configuration": {
                 "type": "PLATFORM_USERS",
                 "usersFilter": { "type": "AFFECTED_USER" },
@@ -61,8 +61,6 @@ export default function workflow() {
     console.log("update recipient : ",update_recipient_response);
     sleep(0.5);
 
-  
-  
     //*************  GET recipients list (GET request) *********************//
     const get_list_metadata = {
         url: `${BASE_URL}/notification/targets?pageSize=10&page=0&sortProperty=createdTime&sortOrder=DESC`,
@@ -75,7 +73,6 @@ export default function workflow() {
     const get_list_response = get_abstract_without_payload(get_list_metadata);
     console.log("get list : ",get_list_response);
     sleep(0.5);
-
 
     //*************  COPY recipients  (POST request) *********************//
     const post_copy_recipient = {
@@ -97,7 +94,7 @@ export default function workflow() {
                 "type": "ORIGINATOR_ENTITY_OWNER_USERS"
             },
             "createdTime": 1742330465602,
-            "name": `test-copy-${randomString(5)}`, // Ensure unique name
+            "name": `test-copy-${randomString(5)}`, 
             "tenantId": {
                 "entityType": "TENANT",
                 "id": "aeddc290-ef6c-11ef-a2cf-8be4056be751"

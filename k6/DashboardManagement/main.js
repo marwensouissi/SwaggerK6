@@ -30,9 +30,9 @@ export default function workflow() {
         token: token,
     };
     const post_dashboard_result = post_abstract_with_payload(post_metadata_dashboard);
-    console.log("create dashboard : ",post_dashboard_result); // Journaliser la réponse
+    console.log("create dashboard : ",post_dashboard_result); 
 
-    const dashId = post_dashboard_result.data.id.id;
+    const dashId = post_dashboard_result.data.id.id; // Extract the dashboard ID from the response
     console.log("Dashboard ID: ", dashId); // Log the dashboard ID 
     sleep(0.5);
 
@@ -117,7 +117,7 @@ export default function workflow() {
         token: token,
     };
     const post_import_result = post_abstract_with_payload(post_import_dashboard);
-    console.log("import dashboard : ",post_import_result); // Log the response
+    console.log("import dashboard : ",post_import_result); 
     sleep(0.5);
 
 
@@ -131,7 +131,7 @@ export default function workflow() {
             token: token,
         };
         const get_dashboard_result = get_abstract_without_payload(get_metadata_dashboard);
-        console.log("export dashboard : ",get_dashboard_result); // Journaliser la réponse
+        console.log("export dashboard : ",get_dashboard_result); 
         sleep(0.5);
 
 
@@ -145,7 +145,7 @@ export default function workflow() {
         token: token,
         };
     const delete_response = delete_abstract_without_payload(delete_metadata_dashboard);
-    console.log("delete dashboard : ",delete_response); // Journaliser la réponse
+    console.log("delete dashboard : ",delete_response); 
     sleep(0.5); 
 
     

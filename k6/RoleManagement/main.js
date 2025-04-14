@@ -10,7 +10,7 @@ export default function workflow() {
     // ************* Login *********************//
     const token = login("henchirnouha02@gmail.com", "123456789");
 
-    //************* CREATE or EDIT Role (POST request) *********************//
+    //************* CREATE Role (POST request) *********************//
     const post_metadata_role = {
         url: `${BASE_URL}/role`,
         payload: {
@@ -36,18 +36,52 @@ export default function workflow() {
             userIds: []
         },
         tag: "test",
-        job: "user creates or edits a new role",
+        job: "user creates a new role",
         fail: false,
         status: 200,
         token: token,
     };
     const post_role_result = post_abstract_with_payload(post_metadata_role);
-    console.log(post_role_result); // Journaliser la réponse
-    
-    const roleID = post_role_result.data.id.id;
-    console.log("role ID: ", roleID); // Log the role ID for further use
-
+    console.log(post_role_result); 
+    const roleID = post_role_result.data.id.id; // Extract the role ID from the response
+    console.log("role ID: ", roleID); // log the role ID
     sleep(0.5);
+
+    //************* EDIT Role (POST request) *********************//
+    const edit_metadata_role = {
+        url: `${BASE_URL}/role`,
+        payload: {
+            annotationRole: null,
+            assetPermissions: {permissions: [], canCreate: false},
+            cameraPermissions: {permissions: [], canCreate: false},
+            canManageBusinessAccelerators: false,
+            canManageCustomer: false,
+            canManageExperiences: false,
+            canManageNotification: false,
+            canManageUsers: false,
+            computeDevicePermissions: {permissions: [], canCreate: false},
+            customerId: {entityType: "CUSTOMER", id: "13814000-1dd2-11b2-8080-808080808080"},
+            dashboardPermissions: {permissions: [], canCreate: false},
+            description: `${randomString(20)}`,
+            devicePermissions: {permissions: [], canCreate: false},
+            entityViewPermissions: {permissions: [], canCreate: false},
+            id: {entityType: "ROLE", id: roleID},
+            menus: {platform: [], mobile: []},
+            mlflowPermissions: {experimentPermissions: [], registeredModelPermissions: []},
+            name: `edited-${randomString(8)}`,
+            storagePermissions: {permissions: [], canCreate: false},
+            type: "GROUP",
+            userIds: []
+            
+        },
+        tag:"test",
+        job:"user edits a role",
+        fail:false,
+        status : 200,
+        token : token
+    };
+    const edit_role_result = post_abstract_with_payload(edit_metadata_role);
+    console.log(edit_role_result); 
 
     
     //************* DELETE Role (DELETE request) *********************//
@@ -61,7 +95,7 @@ export default function workflow() {
         token: token,
     };
     const delete_role_result = delete_abstract_without_payload(delete_metadata_role);
-    console.log(delete_role_result); // Journaliser la réponse
+    console.log(delete_role_result); 
     sleep(0.5);
 
     sleep(0.1);

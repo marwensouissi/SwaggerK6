@@ -26,8 +26,8 @@ export default function workflow() {
     const post_dataSRC_response = post_abstract_with_payload(post_metadata_dataSRC);
     console.log("create data source : ", post_dataSRC_response); 
 
-    const dataID = post_dataSRC_response.data.id.id; // Récupérer l'ID de la notification créée
-    console.log(`data ID: ${dataID}`); 
+    const dataID = post_dataSRC_response.data.id.id; // Extract the data source ID from the response
+    console.log(`data ID: ${dataID}`); // Log the data source ID
     sleep(0.5);
 
 
@@ -42,7 +42,7 @@ export default function workflow() {
         token: token,
     };
     const delete_dataSRC_response = delete_abstract_without_payload(delete_metadata_dataSRC);
-    console.log("delete data source : ",delete_dataSRC_response); // Journaliser la réponse
+    console.log("delete data source : ",delete_dataSRC_response); 
     sleep(0.5);
 
     sleep(1);

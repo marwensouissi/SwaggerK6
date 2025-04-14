@@ -5,12 +5,11 @@ import { login } from '../AuthManagement/auth.js';
 import { randomString } from 'https://jslib.k6.io/k6-utils/1.2.0/index.js';
 
 export default function workflow() {
-    const BASE_URL = 'https://dev-itona.xyz/api';
 
     // ************* Login *********************//
     const token = login("henchirnouha02@gmail.com", "123456789");
 
-    //************* CREATE Package (POST request) *********************//
+    //************* CREATE model training (POST request) *********************//
     const post_metadata_training = {
         url: `https://dev-itona.xyz/train/ajax-api/2.0/mlflow/experiments/create`,
         payload: {
@@ -26,12 +25,27 @@ export default function workflow() {
     const post_training_response = post_abstract_with_payload(post_metadata_training);
     console.log("create training : ", post_training_response); 
 
-    const trainingID = post_training_response.data.experiment_id; // Correctly access the experiment_id
-    console.log(`training ID: ${trainingID}`); 
+    const trainingID = post_training_response.data.experiment_id; // Extract the training ID from the response
+    console.log(`training ID: ${trainingID}`); //   Log the training ID
     sleep(0.5);
 
+    //************* EDIT model training (POST request) *********************//
+    const edit_metadata_training = {
+        url: `https://dev-itona.xyz/train/ajax-api/2.0/mlflow/experiments/update`,
+        payload: {
+            experiment_id: `${trainingID}`,
+            new_name: `edited-${randomString(8)}`
+        },
+        tag: "test",
+        job: "user edits a training",
+        fail: false,
+        status: 200,
+        token: token,
+    };
+    const edit_training_response = post_abstract_with_payload(edit_metadata_training); 
+    console.log("edit training : ", edit_training_response);
 
-    //************* DELETE package (DELETE request) *********************//
+    //************* DELETE model training (DELETE request) *********************//
     const delete_metadata_training = {
         url: `https://dev-itona.xyz/train/ajax-api/2.0/mlflow/experiments/delete`,
         payload: {
@@ -44,7 +58,7 @@ export default function workflow() {
         token: token,
     };
     const delete_training_response = delete_abstract_without_payload(delete_metadata_training);
-    console.log("delete training : ",delete_training_response); // Journaliser la réponse
+    console.log("delete training : ",delete_training_response); 
     sleep(0.5);
 
     sleep(1);

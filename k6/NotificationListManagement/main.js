@@ -26,6 +26,6 @@ export default function workflow() {
         token: token,
     };
     const get_notification_list_response = get_abstract_with_payload(get_metadata_notification_list);
-    console.log(get_notification_list_response); // Journaliser la réponse
+    console.log(get_notification_list_response); 
     sleep(0.5);
 }

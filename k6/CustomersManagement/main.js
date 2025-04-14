@@ -33,10 +33,10 @@ export default function workflow() {
         token: token,
     };
     const post_customer_result = post_abstract_with_payload(post_metadata_customer);
-    console.log(post_customer_result); // Journaliser la réponse
+    console.log(post_customer_result); 
 
-    const customerID = post_customer_result.data.id.id;
-    console.log("customer ID: ", customerID); // Log the customer ID for further use
+    const customerID = post_customer_result.data.id.id; // Extract the customer ID from the response
+    console.log("customer ID: ", customerID); // Log the customer ID 
     sleep(0.5);
 
 
@@ -50,7 +50,7 @@ export default function workflow() {
         token: token,
     };
     const get_customer_result = get_abstract_without_payload(get_metadata_customer);
-    console.log(get_customer_result); // Journaliser la réponse
+    console.log(get_customer_result); 
     sleep(0.5);
 
 

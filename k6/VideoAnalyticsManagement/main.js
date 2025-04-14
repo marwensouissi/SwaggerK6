@@ -10,7 +10,7 @@ export default function workflow() {
     // ************* Login *********************//
     const token = login("henchirnouha02@gmail.com", "123456789");
 
-    //************* CREATE or EDIT Chain (POST request) *********************//
+    //************* CREATE Chain (POST request) *********************//
     const post_metadata_chain = {
         url: `${BASE_URL}/vidAnalChain`,
         payload: {
@@ -32,26 +32,50 @@ export default function workflow() {
             "connections": [] 
           },
         tag: "test",
-        job: "user creates or edits a vidAnalChain",
+        job: "user creates a vidAnalChain",
         fail: false,
         status: 200,
         token: token,
     };
     const post_chain_result = post_abstract_with_payload(post_metadata_chain);
-    console.log(post_chain_result); // Journaliser la réponse
+    console.log(post_chain_result); 
 
-    const chainId = post_chain_result.data.id.id;
-    console.log(`Chain ID: ${chainId}`);
+    const chainId = post_chain_result.data.id.id; // Extract the chain ID from the response
+    console.log(`Chain ID: ${chainId}`); // Log the chain ID
     sleep(0.5);
 
+    //************* EDIT Chain (POST request) *********************//
+    const edit_metadata_chain = {
+        url: `${BASE_URL}/vidAnalChain`,
+        payload: {
+          "connections": [],
+          "debugMode": null,
+          "description": `${randomString(20)}`,
+          "id": {
+              "entityType": "VID_ANALYTIC_CHAIN",
+              "id": chainId
+          },
+          "name": `edited-${randomString(20)}`,
+          "nodesList": [],
+          "root": false,
+          "tenantId": {
+              "entityType": "TENANT",
+              "id": "aeddc290-ef6c-11ef-a2cf-8be4056be751"
+          },
+          "type": "CORE"
+          },
+        tag: "test",
+        job: "user edits a vidAnalChain",
+        fail: false,
+        status: 200,
+        token: token,
+    };
+    const edit_chain_result = post_abstract_with_payload(edit_metadata_chain);
+    console.log("edit chain: ",edit_chain_result); 
 
-    // **********************  DELETE vidanalytic  ********************* //
+    // **********************  DELETE vidanalytic (DELETE request) ********************* //
     const delete_metadata_chain = {
       url: `${BASE_URL}/vidAnalChain/${chainId}`,
-      headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-      },
       tag: "delete_request",
       job: "Delete an item",
       fail: false,
@@ -59,7 +83,7 @@ export default function workflow() {
       token: token,
     };
     const delete_response = delete_abstract_without_payload(delete_metadata_chain);
-    console.log(`DELETE Response: ${JSON.stringify(delete_response)}`);
+    console.log(`DELETE Response: `, delete_response); // Log the response
     sleep(0.5);
 
     sleep(0.1);
