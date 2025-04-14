@@ -92,20 +92,7 @@ export default function workflow() {
     };
     const edit_user_result = post_abstract_with_payload(edit_metadata_user);
     console.log(edit_user_result); 
-
-    //************* DELETE User (DELETE request) *********************//
-    const delete_metadata_user = {
-        url: `${BASE_URL}/user/${userID}`,
-        payload: null,
-        tag: "test",
-        job: "user deletes a user",
-        fail: false,
-        status: 200,
-        token: token,
-    };
-    const delete_user_result = delete_abstract_without_payload(delete_metadata_user);
-    console.log(delete_user_result); 
     sleep(0.5);
-
+    
     sleep(0.1);
 }

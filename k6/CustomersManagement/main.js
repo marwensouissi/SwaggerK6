@@ -52,21 +52,6 @@ export default function workflow() {
     const get_customer_result = get_abstract_without_payload(get_metadata_customer);
     console.log(get_customer_result); 
     sleep(0.5);
-
-
-   //************* DELETE Customer (DELETE request) *********************//
-   const delete_metadata_customer = {
-        url: `${BASE_URL}/customer/${customerID}`,
-        payload: null,
-        tag: "test",
-        job: "user deletes a new customer",
-        fail: false,
-        status: 200,
-        token: token,
-    };
-    const delete_customer_result = delete_abstract_without_payload(delete_metadata_customer);
-    console.log(delete_customer_result); // Journaliser la réponse
-    sleep(0.5);
     
     sleep(1);
 

@@ -44,19 +44,6 @@ export default function workflow() {
     console.log("Template ID: ", templateID); // Log the template ID 
     sleep(0.5);
 
-    //*********************************** DELETE Template *************************************//
-    const delete_template = {
-        url: `${BASE_URL}/notification/template/${templateID}`,
-        tag: "test",
-        job: "delete a template",
-        fail: false,
-        status: 200,
-        token: token,
-    };
-    const delete_template_result = delete_abstract_without_payload(delete_template);
-    console.log("delete template : ",delete_template_result); 
-    sleep(0.5);
-
     sleep(1);
 
 

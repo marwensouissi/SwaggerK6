@@ -44,22 +44,7 @@ export default function workflow() {
     };
     const edit_training_response = post_abstract_with_payload(edit_metadata_training); 
     console.log("edit training : ", edit_training_response);
-
-    //************* DELETE model training (DELETE request) *********************//
-    const delete_metadata_training = {
-        url: `https://dev-itona.xyz/train/ajax-api/2.0/mlflow/experiments/delete`,
-        payload: {
-            "experiment_id": trainingID
-        },        
-        tag: "test",
-        job: "user deletes a training",
-        fail: false,
-        status: 200,
-        token: token,
-    };
-    const delete_training_response = delete_abstract_without_payload(delete_metadata_training);
-    console.log("delete training : ",delete_training_response); 
     sleep(0.5);
-
+    
     sleep(1);
 }

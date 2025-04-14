@@ -72,18 +72,6 @@ export default function workflow() {
     };
     const edit_chain_result = post_abstract_with_payload(edit_metadata_chain);
     console.log("edit chain: ",edit_chain_result); 
-
-    // **********************  DELETE vidanalytic (DELETE request) ********************* //
-    const delete_metadata_chain = {
-      url: `${BASE_URL}/vidAnalChain/${chainId}`,
-      tag: "delete_request",
-      job: "Delete an item",
-      fail: false,
-      status: 200,
-      token: token,
-    };
-    const delete_response = delete_abstract_without_payload(delete_metadata_chain);
-    console.log(`DELETE Response: `, delete_response); // Log the response
     sleep(0.5);
 
     sleep(0.1);

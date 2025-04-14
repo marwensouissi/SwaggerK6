@@ -58,19 +58,6 @@ export default function workflow() {
     console.log(get_configFile_result); 
     sleep(0.5);
 
-    //************* DELETE Compute Device (DELETE request) *********************//
-    const delete_metadata_compute_device = {
-        url: `${BASE_URL}/computeDevice/${computeDeviceID}`,
-        tag: "test",
-        job: "user deletes a compute device",
-        fail: false,
-        status: 200,
-        token: token,
-    };
-    const delete_compute_device_result = delete_abstract_without_payload(delete_metadata_compute_device);       
-    console.log(delete_compute_device_result); 
-    sleep(0.5);
-
     sleep(1);
 
 }

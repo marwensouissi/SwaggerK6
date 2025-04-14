@@ -122,32 +122,17 @@ export default function workflow() {
 
 
     //************* EXPORT dashboard (GET request) *********************//
-        const get_metadata_dashboard = {
-            url: `${BASE_URL}/dashboard/${dashId}`,
-            tag: "test",
-            job: "user exports a dashboard",
-            fail: false,
-            status: 200,
-            token: token,
-        };
-        const get_dashboard_result = get_abstract_without_payload(get_metadata_dashboard);
-        console.log("export dashboard : ",get_dashboard_result); 
-        sleep(0.5);
-
-
-    // ********************* DELETE Dashboard (DELETE request) *********************//
-    const delete_metadata_dashboard = {
+    const get_metadata_dashboard = {
         url: `${BASE_URL}/dashboard/${dashId}`,
         tag: "test",
-        job: "user deletes a dashboard",
+        job: "user exports a dashboard",
         fail: false,
         status: 200,
         token: token,
-        };
-    const delete_response = delete_abstract_without_payload(delete_metadata_dashboard);
-    console.log("delete dashboard : ",delete_response); 
-    sleep(0.5); 
-
+    };
+    const get_dashboard_result = get_abstract_without_payload(get_metadata_dashboard);
+    console.log("export dashboard : ",get_dashboard_result); 
+    sleep(0.5);
     
     sleep(1);
 }

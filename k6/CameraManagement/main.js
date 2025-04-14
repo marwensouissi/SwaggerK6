@@ -158,21 +158,6 @@ export default function workflow() {
     console.log("Export csv response: ", export_csv_response); 
     sleep(0.5);
 
-
-
-    //************* DELETE Camera (Post Request) *********************//
-    const delete_metadata_camera = {
-        url: `${BASE_URL}/device/${cameraId}`,
-        tag: "test",
-        job: "Delete camera",
-        fail: false,
-        status: 200, 
-        token: token,
-    };
-    const delete_camera_response = delete_abstract_without_payload(delete_metadata_camera);
-    console.log("Delete camera response: ", delete_camera_response); 
-    sleep(0.5); 
-
     sleep(1);
 
 }

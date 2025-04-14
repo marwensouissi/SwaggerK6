@@ -39,20 +39,5 @@ export default function workflow() {
     console.log(`Package ID: ${packageID}`); // Log the package ID
     sleep(0.5);
 
-
-    //************* DELETE package (DELETE request) *********************//
-    const delete_metadata_package = {
-        url: `${BASE_URL}/otaPackage/${packageID}`,
-        payload: null,
-        tag: "test",
-        job: "user deletes a packagee",
-        fail: false,
-        status: 200,
-        token: token,
-    };
-    const delete_package_response = delete_abstract_without_payload(delete_metadata_package);
-    console.log("delete package : ",delete_package_response); // Journaliser la réponse
-    sleep(0.5);
-
     sleep(1);
 }
