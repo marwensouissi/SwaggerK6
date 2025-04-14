@@ -17,7 +17,7 @@ sudo systemctl enable docker
 sudo systemctl start docker
 
 echo "⚙️ Installing curl, wget, unzip, and other essentials..."
-sudo apt-get install -y curl wget unzip bash ca-certificates gnupg lsb-release
+sudo apt-get install -y curl wget unzip bash ca-certificates gnupg lsb-release jq
 
 echo "📦 Installing kubectl..."
 curl -LO "https://dl.k8s.io/release/$(curl -Ls https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
