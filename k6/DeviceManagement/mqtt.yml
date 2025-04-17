@@ -14,7 +14,5 @@ spec:
     image: xk6-images
     imagePullPolicy: Never
     env:
-      - name: K6_PROMETHEUS_RW_SERVER_URL
-        value: http://prometheus-server.default.svc.cluster.local:80/api/v1/write
-      - name: K6_PROMETHEUS_RW_TREND_STATS
-        value: "p(95),p(99),max,min"
+      - name: K6_WEB_DASHBOARD
+        value: "true"
