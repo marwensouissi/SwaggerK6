@@ -1,7 +1,7 @@
 # Stage 1: Build k6 with plugins
 FROM golang:1.23 AS builder
 
-# Set web hookk
+# Set web hookkjj
 
 
 # Install dependencies
