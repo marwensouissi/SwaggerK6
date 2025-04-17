@@ -1,10 +1,14 @@
 # Stage 1: Build k6 with plugins
 FROM golang:1.23 AS builder
 
+# Set web hook 
+
+
 # Install dependencies
 RUN go install go.k6.io/xk6/cmd/xk6@latest
 
-# Set working directory for webhook
+# Set working directory 
+
 WORKDIR /build
 
 # Build K6 with MQTT & File plugins
