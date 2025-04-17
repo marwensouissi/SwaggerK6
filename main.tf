@@ -1,3 +1,26 @@
+terraform {
+  required_providers {
+    digitalocean = {
+      source  = "digitalocean/digitalocean"
+      version = "~> 2.49"
+    }
+    helm = {
+      source  = "hashicorp/helm"
+      version = "~> 2.15"
+    }
+    kubernetes = {
+      source  = "hashicorp/kubernetes"
+      version = "~> 2.25"
+    }
+    kubectl = {
+      source  = "gavinbunney/kubectl"
+      version = "~> 1.14"
+    }
+  }
+
+  required_version = ">= 1.3.0"
+}
+
 variable "do_token" {
   type = string
 }
