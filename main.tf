@@ -67,17 +67,33 @@ resource "digitalocean_kubernetes_cluster" "k8s_cluster" {
     auto_scale = false
   }
 }
+
+# ===============================
+# SAVE KUBECONFIG TO FILE
+# ===============================
+
+resource "local_file" "kubeconfig" {
+  content  = digitalocean_kubernetes_cluster.k8s_cluster.kube_config[0].raw_config
+  filename = "${path.module}/kubeconfig.yaml"
+}
+
+# ===============================
+# INSTALL K6 OPERATOR
+# ===============================
+
 resource "null_resource" "install_k6_operator" {
-  depends_on = [digitalocean_kubernetes_cluster.k8s_cluster]
+  depends_on = [digitalocean_kubernetes_cluster.k8s_cluster, local_file.kubeconfig]
 
   provisioner "local-exec" {
     command = "bash ${path.module}/bootstrap-k6.sh"
+    environment = {
+      KUBECONFIG = "${path.module}/kubeconfig.yaml"
+    }
   }
 }
 
-
 # ===============================
-# OUTPUT
+# OUTPUTS
 # ===============================
 
 output "cluster_id" {
