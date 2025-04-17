@@ -79,7 +79,7 @@ provider "helm" {
 
 resource "helm_release" "k6_operator" {
   name       = "k6-operator"
-  repository = "https://k6io.github.io/operator"
+  repository = "https://grafana.github.io/helm-charts"
   chart      = "k6-operator"
   namespace  = "default"
   create_namespace = false
