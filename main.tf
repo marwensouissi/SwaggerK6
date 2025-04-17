@@ -4,6 +4,7 @@ terraform {
       source  = "digitalocean/digitalocean"
       version = "~> 2.49.1"
     }
+    helm = { source = "hashicorp/helm", version = "~> 2.15.0" }
   }
 }
 
@@ -81,15 +82,12 @@ resource "local_file" "kubeconfig" {
 # INSTALL K6 OPERATOR
 # ===============================
 
-resource "null_resource" "install_k6_operator" {
-  depends_on = [digitalocean_kubernetes_cluster.k8s_cluster, local_file.kubeconfig]
-
-  provisioner "local-exec" {
-    command = "bash ${path.module}/bootstrap-k6.sh"
-    environment = {
-      KUBECONFIG = "${path.module}/kubeconfig.yaml"
-    }
-  }
+resource "helm_release" "k6_operator" {
+  name       = "k6-operator"
+  repository = "https://grafana.github.io/helm-charts"
+  chart      = "k6-operator"
+  namespace  = "k6-operator-system"
+  create_namespace = true
 }
 
 # ===============================
