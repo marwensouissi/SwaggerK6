@@ -2,60 +2,21 @@ terraform {
   required_providers {
     digitalocean = {
       source  = "digitalocean/digitalocean"
-      version = "~> 2.49"
-    }
-    helm = {
-      source  = "hashicorp/helm"
-      version = "~> 2.15"
+      version = "~> 2.49.1"
     }
     kubernetes = {
       source  = "hashicorp/kubernetes"
-      version = "~> 2.25"
+      version = "~> 2.27.0"
     }
-    kubectl = {
-      source  = "gavinbunney/kubectl"
-      version = "~> 1.14"
-    }
-    local = {
-      source  = "hashicorp/local"
-      version = "~> 2.5"
+    helm = {
+      source  = "hashicorp/helm"
+      version = "~> 2.13.2"
     }
   }
-
-  required_version = ">= 1.3.0"
 }
 
 provider "digitalocean" {
   token = var.do_token
-}
-
-provider "kubernetes" {
-  load_config_file = false
-  host             = digitalocean_kubernetes_cluster.cluster.endpoint
-  token            = digitalocean_kubernetes_cluster.cluster.kube_config[0].token
-  cluster_ca_certificate = base64decode(
-    digitalocean_kubernetes_cluster.cluster.kube_config[0].cluster_ca_certificate
-  )
-}
-
-provider "kubectl" {
-  load_config_file = false
-  host             = digitalocean_kubernetes_cluster.cluster.endpoint
-  token            = digitalocean_kubernetes_cluster.cluster.kube_config[0].token
-  cluster_ca_certificate = base64decode(
-    digitalocean_kubernetes_cluster.cluster.kube_config[0].cluster_ca_certificate
-  )
-  apply_retry_count = 5
-}
-
-provider "helm" {
-  kubernetes {
-    host             = digitalocean_kubernetes_cluster.cluster.endpoint
-    token            = digitalocean_kubernetes_cluster.cluster.kube_config[0].token
-    cluster_ca_certificate = base64decode(
-      digitalocean_kubernetes_cluster.cluster.kube_config[0].cluster_ca_certificate
-    )
-  }
 }
 
 variable "do_token" {
@@ -65,161 +26,67 @@ variable "do_token" {
 }
 
 variable "cluster_name" {
-  description = "Name of the Kubernetes cluster"
-  type        = string
-  default     = "cluster"
+  default     = "k8s-k6-cluster"
+  description = "Kubernetes cluster name"
 }
 
-variable "cluster_region" {
-  description = "Region where the cluster will be created"
-  type        = string
-  default     = "fra1"
+variable "region" {
+  default     = "nyc3"
+  description = "DigitalOcean region"
 }
 
-variable "node_pool_name" {
-  description = "Name of the autoscaling node pool"
-  type        = string
-  default     = "worker_pool"
+variable "k8s_version" {
+  default     = "1.32.2-do.0"
+  description = "Kubernetes version"
 }
 
-variable "node_pool_size" {
-  description = "Droplet size for the autoscaling node pool"
-  type        = string
-  default     = "s-1vcpu-3gb" # 1 vCPU, 3GB RAM
+variable "node_size" {
+  default     = "s-2vcpu-4gb"
+  description = "Node size"
 }
 
-variable "node_count_min" {
-  description = "Minimum number of nodes in the autoscaling node pool"
-  type        = number
+variable "node_count" {
   default     = 2
+  description = "Number of nodes"
 }
 
-variable "node_count_max" {
-  description = "Maximum number of nodes in the autoscaling node pool"
-  type        = number
-  default     = 5
-}
-
-variable "container_registry_name" {
-  description = "Name of the DigitalOcean Container Registry"
-  type        = string
-  default     = "registry"
-}
-
-resource "digitalocean_kubernetes_cluster" "cluster" {
+resource "digitalocean_kubernetes_cluster" "k8s_cluster" {
   name    = var.cluster_name
-  region  = var.cluster_region
-  version = "1.28.2-do.0" # Updated to a modern, supported version
+  region  = var.region
+  version = var.k8s_version
 
   node_pool {
-    name       = "default-pool"
-    size       = "s-2vcpu-2gb"
-    node_count = 1
+    name       = "worker-pool"
+    size       = var.node_size
+    node_count = var.node_count
   }
 }
 
-resource "digitalocean_kubernetes_node_pool" "node-pool" {
-  cluster_id = digitalocean_kubernetes_cluster.cluster.id
-
-  name       = var.node_pool_name
-  size       = var.node_pool_size
-  node_count = var.node_count_min
-  auto_scale = true
-  min_nodes  = var.node_count_min
-  max_nodes  = var.node_count_max
+# Setup Kubernetes & Helm providers using kubeconfig from DO
+provider "kubernetes" {
+  host                   = digitalocean_kubernetes_cluster.k8s_cluster.endpoint
+  cluster_ca_certificate = base64decode(digitalocean_kubernetes_cluster.k8s_cluster.kube_config[0].cluster_ca_certificate)
+  token                  = digitalocean_kubernetes_cluster.k8s_cluster.kube_config[0].token
 }
 
-resource "digitalocean_container_registry" "registry" {
-  name = var.container_registry_name
-}
-
-resource "local_file" "kubeconfig" {
-  content         = digitalocean_kubernetes_cluster.cluster.kube_config[0].raw_config
-  filename        = "${path.module}/kubeconfig.yaml"
-  file_permission = "0600"
-}
-
-resource "helm_release" "metrics-server" {
-  name       = "metrics-server"
-  repository = "https://charts.bitnami.com/bitnami" # Updated to Bitnami
-  chart      = "metrics-server"
-  namespace  = "kube-system"
-
-  values = [
-    file("metrics-server-values.yaml")
-  ]
-}
-
-resource "kubernetes_namespace" "ingress" {
-  metadata {
-    name = "ingress-nginx"
-  }
-}
-
-resource "helm_release" "ingress-nginx" {
-  name       = "ingress-nginx"
-  repository = "https://kubernetes.github.io/ingress-nginx"
-  chart      = "ingress-nginx"
-  namespace  = kubernetes_namespace.ingress.metadata[0].name
-  depends_on = [kubernetes_namespace.ingress]
-}
-
-resource "kubernetes_namespace" "cert-manager" {
-  metadata {
-    name = "cert-manager"
-  }
-}
-
-resource "helm_release" "cert-manager" {
-  name       = "cert-manager"
-  repository = "https://charts.jetstack.io"
-  chart      = "cert-manager"
-  namespace  = kubernetes_namespace.cert-manager.metadata[0].name
-
-  set {
-    name  = "installCRDs"
-    value = "true"
-  }
-
-  depends_on = [kubernetes_namespace.cert-manager]
-}
-
-resource "kubectl_manifest" "letsencrypt-issuer" {
-  yaml_body  = file("${path.module}/letsencrypt-issuer.yaml")
-  depends_on = [helm_release.cert-manager]
-}
-
-resource "kubernetes_namespace" "k6_operator" {
-  metadata {
-    name = "k6-operator-system"
+provider "helm" {
+  kubernetes {
+    host                   = digitalocean_kubernetes_cluster.k8s_cluster.endpoint
+    cluster_ca_certificate = base64decode(digitalocean_kubernetes_cluster.k8s_cluster.kube_config[0].cluster_ca_certificate)
+    token                  = digitalocean_kubernetes_cluster.k8s_cluster.kube_config[0].token
   }
 }
 
 resource "helm_release" "k6_operator" {
   name       = "k6-operator"
-  repository = "https://grafana.github.io/helm-charts"
+  repository = "https://k6io.github.io/operator"
   chart      = "k6-operator"
-  namespace  = kubernetes_namespace.k6_operator.metadata[0].name
+  namespace  = "default"
+  create_namespace = false
 
-  set {
-    name  = "createCustomResource"
-    value = "true"
-  }
-
-  depends_on = [kubernetes_namespace.k6_operator]
 }
 
-output "container_registry" {
-  description = "Endpoint of the DigitalOcean Container Registry"
-  value       = digitalocean_container_registry.registry.endpoint
-}
-
-output "kubeconfig_path" {
-  description = "Path to the saved kubeconfig file"
-  value       = local_file.kubeconfig.filename
-}
-
-output "cluster_id" {
-  description = "ID of the Kubernetes cluster"
-  value       = digitalocean_kubernetes_cluster.cluster.id
+output "kubeconfig" {
+  value     = digitalocean_kubernetes_cluster.k8s_cluster.kube_config[0].raw_config
+  sensitive = true
 }
