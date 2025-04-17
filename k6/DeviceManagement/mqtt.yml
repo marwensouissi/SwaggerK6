@@ -11,8 +11,8 @@ spec:
       name: mqtt-test
       file: archive.tar
   runner:
-    image: xk6-images
-    imagePullPolicy: Never
+    image: ndammakian/xk6-images:latest
+    imagePullPolicy: Allways
     env:
       - name: K6_WEB_DASHBOARD
         value: "true"
