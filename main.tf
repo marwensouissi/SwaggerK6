@@ -62,7 +62,6 @@ resource "digitalocean_kubernetes_cluster" "k8s_cluster" {
   }
 }
 
-# Setup Kubernetes & Helm providers using kubeconfig from DO
 provider "kubernetes" {
   host                   = digitalocean_kubernetes_cluster.k8s_cluster.endpoint
   cluster_ca_certificate = base64decode(digitalocean_kubernetes_cluster.k8s_cluster.kube_config[0].cluster_ca_certificate)
@@ -78,15 +77,26 @@ provider "helm" {
 }
 
 resource "helm_release" "k6_operator" {
-  name       = "k6-operator"
-  repository = "https://grafana.github.io/helm-charts"
-  chart      = "k6-operator"
-  namespace  = "default"
-  create_namespace = false
-
+  name             = "k6-operator"
+  repository       = "https://grafana.github.io/helm-charts"
+  chart            = "k6-operator"
+  namespace        = "default"
+  create_namespace = true
+  wait             = true
+  timeout          = 300
 }
 
-output "kubeconfig" {
+
+resource "local_file" "kubeconfig_yaml" {
+  content  = digitalocean_kubernetes_cluster.k8s_cluster.kube_config[0].raw_config
+  filename = "${path.module}/kubeconfig_do.yaml"
+}
+
+output "kubeconfig_raw" {
   value     = digitalocean_kubernetes_cluster.k8s_cluster.kube_config[0].raw_config
   sensitive = true
+}
+
+output "kubeconfig_path" {
+  value = abspath(local_file.kubeconfig_yaml.filename)
 }
