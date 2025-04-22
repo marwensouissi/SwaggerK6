@@ -81,8 +81,11 @@ resource "helm_release" "k6_operator" {
   repository       = "https://grafana.github.io/helm-charts"
   chart            = "k6-operator"
   namespace        = "default"
-  create_namespace = false
+  create_namespace = true
+  wait             = true
+  timeout          = 300
 }
+
 
 resource "local_file" "kubeconfig_yaml" {
   content  = digitalocean_kubernetes_cluster.k8s_cluster.kube_config[0].raw_config
