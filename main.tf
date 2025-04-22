@@ -92,11 +92,11 @@ resource "local_file" "kubeconfigu_yaml" {
   filename = "${path.module}/kubeconfigu_do.yaml"
 }
 
-output "kubeconfig_raw" {
+output "kubeconfigu_raw" {
   value     = digitalocean_kubernetes_cluster.k8s_cluster.kube_config[0].raw_config
   sensitive = true
 }
 
-output "kubeconfig_path" {
+output "kubeconfigu_path" {
   value = abspath(local_file.kubeconfigu_yaml.filename)
 }  
