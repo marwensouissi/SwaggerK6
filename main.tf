@@ -62,50 +62,26 @@ resource "digitalocean_kubernetes_cluster" "k8s_cluster" {
   }
 }
 
+provider "kubernetes" {
+  host                   = digitalocean_kubernetes_cluster.k8s_cluster.endpoint
+  cluster_ca_certificate = base64decode(digitalocean_kubernetes_cluster.k8s_cluster.kube_config[0].cluster_ca_certificate)
+  token                  = digitalocean_kubernetes_cluster.k8s_cluster.kube_config[0].token
+}
+
+provider "helm" {
+  kubernetes {
+    host                   = digitalocean_kubernetes_cluster.k8s_cluster.endpoint
+    cluster_ca_certificate = base64decode(digitalocean_kubernetes_cluster.k8s_cluster.kube_config[0].cluster_ca_certificate)
+    token                  = digitalocean_kubernetes_cluster.k8s_cluster.kube_config[0].token
+  }
+}
+
 resource "local_file" "kubeconfig_yaml" {
   content  = digitalocean_kubernetes_cluster.k8s_cluster.kube_config[0].raw_config
   filename = "${path.module}/kubeconfig_do.yaml"
 }
 
-provider "kubernetes" {
-  config_path = local_file.kubeconfig_yaml.filename
-  config_context = "do-${var.region}-${var.cluster_name}"
-
-  depends_on = [local_file.kubeconfig_yaml]
-}
-
-provider "helm" {
-  kubernetes {
-    config_path    = local_file.kubeconfig_yaml.filename
-    config_context = "do-${var.region}-${var.cluster_name}"
-  }
-  depends_on = [local_file.kubeconfig_yaml]
-}
-
-resource "null_resource" "wait_for_k8s" {
-  depends_on = [local_file.kubeconfig_yaml]
-
-  provisioner "local-exec" {
-    command = <<EOT
-      export KUBECONFIG=${local_file.kubeconfig_yaml.filename}
-      echo "⏳ Waiting for Kubernetes cluster API..."
-      for i in {1..30}; do
-        if kubectl get nodes >/dev/null 2>&1; then
-          echo "✅ Cluster is ready!"
-          exit 0
-        else
-          echo "Still waiting..."
-          sleep 10
-        fi
-      done
-      echo "❌ Timed out waiting for cluster"
-      exit 1
-    EOT
-  }
-}
-
 resource "helm_release" "k6_operator" {
-  depends_on       = [null_resource.wait_for_k8s]
   name             = "k6-operator"
   repository       = "https://grafana.github.io/helm-charts"
   chart            = "k6-operator"
@@ -113,6 +89,8 @@ resource "helm_release" "k6_operator" {
   create_namespace = true
   wait             = true
   timeout          = 300
+
+  depends_on = [local_file.kubeconfig_yaml]
 }
 
 output "kubeconfig_raw" {
