@@ -6,7 +6,7 @@ metadata:
 spec:
   type: LoadBalancer
   selector:
-    app: k6-ui
+    app: k6
   ports:
     - name: http
       port: 80
