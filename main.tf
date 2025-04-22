@@ -89,9 +89,8 @@ resource "helm_release" "k6_operator" {
 
 resource "local_file" "kubeconfigu_yaml" {
   content  = digitalocean_kubernetes_cluster.k8s_cluster.kube_config[0].raw_config
-  filename = "${path.module}/kubeconfig_do.yaml"
+  filename = "${path.module}/kubeconfigu_do.yaml"
 }
-
 
 output "kubeconfig_raw" {
   value     = digitalocean_kubernetes_cluster.k8s_cluster.kube_config[0].raw_config
