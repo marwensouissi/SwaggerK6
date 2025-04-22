@@ -12,7 +12,7 @@ spec:
       file: archive.tar
   runner:
     image: ndammakian/xk6-images:latest
-    imagePullPolicy: Allways
+    imagePullPolicy: Always
     env:
       - name: K6_WEB_DASHBOARD
         value: "true"
