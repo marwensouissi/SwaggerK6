@@ -15,9 +15,9 @@ terraform {
   }
 }
 
-provider "digitalocean" {
-  token = var.do_token
-}
+##########################
+# VARIABLES
+##########################
 
 variable "do_token" {
   description = "DigitalOcean API Token"
@@ -50,16 +50,18 @@ variable "node_count" {
   description = "Number of nodes"
 }
 
-resource "digitalocean_kubernetes_cluster" "k8s_cluster" {
-  name    = var.cluster_name
-  region  = var.region
-  version = var.k8s_version
+variable "enable_k6_operator" {
+  description = "Whether to install k6-operator using Helm"
+  type        = bool
+  default     = true
+}
 
-  node_pool {
-    name       = "worker-pool"
-    size       = var.node_size
-    node_count = var.node_count
-  }
+##########################
+# PROVIDERS
+##########################
+
+provider "digitalocean" {
+  token = var.do_token
 }
 
 provider "kubernetes" {
@@ -76,7 +78,24 @@ provider "helm" {
   }
 }
 
+##########################
+# RESOURCES
+##########################
+
+resource "digitalocean_kubernetes_cluster" "k8s_cluster" {
+  name    = var.cluster_name
+  region  = var.region
+  version = var.k8s_version
+
+  node_pool {
+    name       = "worker-pool"
+    size       = var.node_size
+    node_count = var.node_count
+  }
+}
+
 resource "helm_release" "k6_operator" {
+  count            = var.enable_k6_operator ? 1 : 0
   name             = "k6-operator"
   repository       = "https://grafana.github.io/helm-charts"
   chart            = "k6-operator"
@@ -86,20 +105,22 @@ resource "helm_release" "k6_operator" {
   timeout          = 300
 }
 
-
 resource "local_file" "kubeconfig_yaml" {
+  count    = var.enable_k6_operator ? 1 : 0
   content  = digitalocean_kubernetes_cluster.k8s_cluster.kube_config[0].raw_config
   filename = "${path.module}/kubeconfig_do.yaml"
 }
+
+##########################
+# OUTPUTS
+##########################
 
 output "kubeconfig_raw" {
   value     = digitalocean_kubernetes_cluster.k8s_cluster.kube_config[0].raw_config
   sensitive = true
 }
 
-
 output "kubeconfig_path" {
   value       = var.enable_k6_operator ? abspath(local_file.kubeconfig_yaml[0].filename) : null
   description = "Path to the generated kubeconfig"
 }
-
