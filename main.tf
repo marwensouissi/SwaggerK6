@@ -97,6 +97,9 @@ output "kubeconfig_raw" {
   sensitive = true
 }
 
+
 output "kubeconfig_path" {
-  value = abspath(local_file.kubeconfig_yaml.filename)
+  value       = var.enable_k6_operator ? abspath(local_file.kubeconfig_yaml[0].filename) : null
+  description = "Path to the generated kubeconfig"
 }
+
