@@ -12,7 +12,8 @@ spec:
       file: archive.tar
   runner:
     image: ndammakian/xk6-images:latest
-    imagePullPolicy: Always
+    imagePullSecrets:
+      - name: regcred    
     env:
       - name: K6_WEB_DASHBOARD
         value: "true"
