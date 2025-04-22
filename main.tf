@@ -84,7 +84,12 @@ resource "helm_release" "k6_operator" {
   create_namespace = true
   wait             = true
   timeout          = 300
+  depends_on = [
+    digitalocean_kubernetes_cluster.k8s_cluster,
+    local_file.kubeconfig_yaml
+  ]
 }
+
 
 
 resource "local_file" "kubeconfig_yaml" {
