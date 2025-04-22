@@ -19,37 +19,6 @@ provider "digitalocean" {
   token = var.do_token
 }
 
-variable "do_token" {
-  description = "DigitalOcean API Token"
-  type        = string
-  sensitive   = true
-}
-
-variable "cluster_name" {
-  default     = "k8s-k6-cluster"
-  description = "Kubernetes cluster name"
-}
-
-variable "region" {
-  default     = "nyc3"
-  description = "DigitalOcean region"
-}
-
-variable "k8s_version" {
-  default     = "1.32.2-do.0"
-  description = "Kubernetes version"
-}
-
-variable "node_size" {
-  default     = "s-2vcpu-4gb"
-  description = "Node size"
-}
-
-variable "node_count" {
-  default     = 2
-  description = "Number of nodes"
-}
-
 resource "digitalocean_kubernetes_cluster" "k8s_cluster" {
   name    = var.cluster_name
   region  = var.region
@@ -62,18 +31,43 @@ resource "digitalocean_kubernetes_cluster" "k8s_cluster" {
   }
 }
 
+# Create kubeconfig file first
+resource "local_file" "kubeconfig_yaml" {
+  content  = digitalocean_kubernetes_cluster.k8s_cluster.kube_config[0].raw_config
+  filename = "${path.module}/kubeconfig_do.yaml"
+}
+
+# Configure Kubernetes provider with explicit depends_on
 provider "kubernetes" {
   host                   = digitalocean_kubernetes_cluster.k8s_cluster.endpoint
   cluster_ca_certificate = base64decode(digitalocean_kubernetes_cluster.k8s_cluster.kube_config[0].cluster_ca_certificate)
   token                  = digitalocean_kubernetes_cluster.k8s_cluster.kube_config[0].token
+
+  depends_on = [
+    digitalocean_kubernetes_cluster.k8s_cluster,
+    local_file.kubeconfig_yaml
+  ]
 }
 
+# Configure Helm provider with explicit depends_on
 provider "helm" {
   kubernetes {
     host                   = digitalocean_kubernetes_cluster.k8s_cluster.endpoint
     cluster_ca_certificate = base64decode(digitalocean_kubernetes_cluster.k8s_cluster.kube_config[0].cluster_ca_certificate)
     token                  = digitalocean_kubernetes_cluster.k8s_cluster.kube_config[0].token
   }
+
+  depends_on = [
+    digitalocean_kubernetes_cluster.k8s_cluster,
+    local_file.kubeconfig_yaml
+  ]
+}
+
+# Add a delay resource to ensure cluster is fully ready
+resource "time_sleep" "wait_for_cluster" {
+  depends_on = [digitalocean_kubernetes_cluster.k8s_cluster]
+
+  create_duration = "90s"
 }
 
 resource "helm_release" "k6_operator" {
@@ -84,24 +78,24 @@ resource "helm_release" "k6_operator" {
   create_namespace = true
   wait             = true
   timeout          = 300
+
   depends_on = [
-    digitalocean_kubernetes_cluster.k8s_cluster,
-    local_file.kubeconfig_yaml
+    time_sleep.wait_for_cluster,
+    kubernetes_config_map.v1
   ]
 }
 
+# Create a dummy config map to verify cluster connectivity
+resource "kubernetes_config_map" "v1" {
+  metadata {
+    name = "cluster-ready-check"
+  }
 
+  data = {
+    ready = "true"
+  }
 
-resource "local_file" "kubeconfig_yaml" {
-  content  = digitalocean_kubernetes_cluster.k8s_cluster.kube_config[0].raw_config
-  filename = "${path.module}/kubeconfig_do.yaml"
+  depends_on = [
+    time_sleep.wait_for_cluster
+  ]
 }
-
-output "kubeconfig_raw" {
-  value     = digitalocean_kubernetes_cluster.k8s_cluster.kube_config[0].raw_config
-  sensitive = true
-}
-
-output "kubeconfig_path" {
-  value = abspath(local_file.kubeconfig_yaml.filename)
-} 
