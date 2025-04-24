@@ -33,7 +33,7 @@ export default function workflow() {
         token: token,
     };
     const post_customer_result = post_abstract_with_payload(post_metadata_customer);
-    console.log(post_customer_result); 
+    console.log("create customer: ",post_customer_result); 
 
     const customerID = post_customer_result.data.id.id; // Extract the customer ID from the response
     console.log("customer ID: ", customerID); // Log the customer ID 
@@ -50,9 +50,21 @@ export default function workflow() {
         token: token,
     };
     const get_customer_result = get_abstract_without_payload(get_metadata_customer);
-    console.log(get_customer_result); 
+    console.log("get customer: ",get_customer_result); 
     sleep(0.5);
     
-    sleep(1);
+    //************* DELETE Customer (DELETE request) *********************//
+    const delete_metadata_customer = {
+        url: `${BASE_URL}/customer/${customerID}`,
+        payload: null,
+        tag: "test",
+        job: "user deletes a new customer",
+        fail: false,
+        status: 200,
+        token: token,
+    };
+    const delete_customer_result = delete_abstract_without_payload(delete_metadata_customer);
+    console.log("delete customer: ",delete_customer_result);
+    sleep(0.5);
 
 }

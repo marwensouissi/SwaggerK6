@@ -43,7 +43,7 @@ export default function workflow() {
             }
         },
         tag: "test",
-        job: "user creates or edits or copy a workflow",
+        job: "user creates or copy a workflow",
         fail: false,
         status: 200,
         token: token,
@@ -101,5 +101,19 @@ export default function workflow() {
     console.log("edit workflow : ", edit_notification_response); 
     sleep(0.5);
 
-    sleep(1);
+    //************* DELETE workflow (DELETE request) *********************//
+    const delete_metadata_notification = {
+        url: `${BASE_URL}/notification/rule/${notifID}`,
+        tag: "test",
+        job: "user deletes a workflow",
+        fail: false,
+        status: 200,
+        token: token,
+        
+    };
+    console.log(delete_metadata_notification.token);
+    const delete_notification_response = delete_abstract_without_payload(delete_metadata_notification);
+    console.log("delete workflow :", delete_notification_response);
+    sleep(0.5);
+
 }

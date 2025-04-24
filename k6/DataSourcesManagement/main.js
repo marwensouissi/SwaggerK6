@@ -30,5 +30,16 @@ export default function workflow() {
     console.log(`data ID: ${dataID}`); // Log the data source ID
     sleep(0.5);
 
-    sleep(1);
+    //************* DELETE Data Source (DELETE request) *********************//
+    const delete_metadata_dataSRC = {
+        url: `${BASE_URL}/storage/${dataID}`,
+        tag: "test",
+        job: "user deletes a data source",
+        fail: false,
+        status: 200,
+        token: token,
+    };
+    const delete_dataSRC_response = delete_abstract_without_payload(delete_metadata_dataSRC);
+    console.log("delete data source : ",delete_dataSRC_response); 
+    sleep(0.5);
 }

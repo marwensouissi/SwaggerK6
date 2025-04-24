@@ -134,5 +134,16 @@ export default function workflow() {
     console.log("export dashboard : ",get_dashboard_result); 
     sleep(0.5);
     
-    sleep(1);
+    // ********************* DELETE Dashboard (DELETE request) *********************//
+    const delete_metadata_dashboard = {
+        url: `${BASE_URL}/dashboard/${dashId}`,
+        tag: "test",
+        job: "user deletes a dashboard",
+        fail: false,
+        status: 200,
+        token: token,
+        };
+    const delete_dashboard_response = delete_abstract_without_payload(delete_metadata_dashboard);
+    console.log("delete dashboard : ",delete_dashboard_response); 
+    sleep(0.5); 
 }

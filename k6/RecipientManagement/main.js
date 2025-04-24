@@ -111,7 +111,18 @@ export default function workflow() {
     sleep(0.5);
 
     
-    sleep(1);
+    //*************  DELETE recipient (DELETE request) *********************//
+    const delete_notification_metadata = {
+        url: `${BASE_URL}/notification/target/${notificationID}`,
+        tag: 'test',
+        job: 'user deletes a recipient',
+        fail: false,
+        status: 200,
+        token: token,
+        };
+    const delete_notification_result = delete_abstract_without_payload(delete_notification_metadata);
+    console.log("delete recipient:",delete_notification_result);    
+    sleep(0.5);
 
   }
 

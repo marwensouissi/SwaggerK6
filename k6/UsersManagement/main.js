@@ -41,7 +41,7 @@ export default function workflow() {
         token: token,
     };
     const post_user_result = post_abstract_with_payload(post_metadata_user);
-    console.log(post_user_result); 
+    console.log("create user: ",post_user_result); 
     const userID = post_user_result.data.id.id; // Extract the user ID from the response
     console.log("user ID: ", userID); // Log the customer ID 
     sleep(0.5);
@@ -91,8 +91,21 @@ export default function workflow() {
         token: token,
     };
     const edit_user_result = post_abstract_with_payload(edit_metadata_user);
-    console.log(edit_user_result); 
+    console.log("edit user: ",edit_user_result); 
     sleep(0.5);
     
-    sleep(0.1);
+     //************* DELETE User (DELETE request) *********************//
+     const delete_metadata_user = {
+        url: `${BASE_URL}/user/${userID}`,
+        payload: null,
+        tag: "test",
+        job: "user deletes a user",
+        fail: false,
+        status: 200,
+        token: token,
+    };
+    const delete_user_result = delete_abstract_without_payload(delete_metadata_user);
+    console.log("delete user: ",delete_user_result); 
+    sleep(0.5);
+
 }

@@ -9,6 +9,7 @@ function handleRequest(method, metadata, body = null) {
     if (metadata.token) {
         headers['Authorization'] = `Bearer ${metadata.token}`;
     }
+    console.log("headers : ", headers);
 
     const params = {
         headers: headers,
@@ -17,8 +18,16 @@ function handleRequest(method, metadata, body = null) {
             job: metadata.job,
         },
     };
+    console.log("params : ", params);
 
-    const response = body ? http[method](metadata.url, JSON.stringify(body), params) : http[method](metadata.url, params);
+
+    let response;
+    if (method === 'del') {
+        response = http.request('DELETE', metadata.url, null, params);  
+    } else {
+        response = body ? http[method](metadata.url, JSON.stringify(body), params) : http[method](metadata.url, params);
+    }
+
 
     // Validate response status
     const success = check(response, {
@@ -29,10 +38,14 @@ function handleRequest(method, metadata, body = null) {
         return { success: false, status: response.status, error: response.body };
     }
 
+    // Handle empty or non-JSON responses
     try {
+        if (method === 'del' && response.status === 200 && !response.body) {
+            return { success: true, data: null };  // DELETE success with no body
+        }
         return { success: true, data: response.json() };
-    } catch (error) {  // Explicitly catch the error
-        return { success: false, status: response.status, error: "Invalid JSON response" };
+    } catch (error) {
+        return { success: true, status: response.status, data: response.body };  // Return raw body if JSON parsing fails
     }
 }
 

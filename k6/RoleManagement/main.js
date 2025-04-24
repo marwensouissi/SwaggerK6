@@ -83,6 +83,17 @@ export default function workflow() {
     const edit_role_result = post_abstract_with_payload(edit_metadata_role);
     console.log(edit_role_result); 
 
-    sleep(0.1);
+    //************* DELETE Role (DELETE request) *********************//
+    const delete_metadata_role = {
+        url: `${BASE_URL}/role/${roleID}`,
+        tag: "test",
+        job: "user deletes a role",
+        fail: false,
+        status: 200,
+        token: token,
+    };
+    const delete_role_result = delete_abstract_without_payload(delete_metadata_role);
+    console.log("delete role:",delete_role_result); 
+    sleep(0.5);
 
 }
