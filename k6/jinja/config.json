@@ -1,0 +1,13 @@
+{
+    "stages": [
+      { "duration": "1m", "target": 1 }
+
+    ],
+    "test_cases": [
+      {
+        "module": "../CameraManagement/main.js",
+        "functions": ["createCamera", "editCamera", "exportToPDF" , "exportToCSV" , "deleteCamera"]
+      }
+    ]
+  }
+  

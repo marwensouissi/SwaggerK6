@@ -1,0 +1,36 @@
+import { signup, login } from '../AuthManagement/auth.js';
+{% for module in test_cases %}
+import { {{ module.functions | join(', ') }} } from '{{ module.module }}';
+{% endfor %}
+import { sleep } from 'k6';
+
+const PASSWORD = '123123123';
+
+export let options = {
+    stages: [
+        {% for stage in stages %}
+            { duration: '{{ stage.duration }}', target: {{ stage.target }} }{% if not loop.last %},{% endif %}
+        {% endfor %}
+    ]
+};
+
+export default function () {
+    const user = signup();
+    if (user) {
+        const token = login(user.email, PASSWORD);
+        if (token) {
+            {% for module in test_cases %}
+                {% set module_prefix = module.module.split('/')[-1].replace('.js', '').replace('-', '_') %}
+                {% if module.functions|length >= 1 %}
+                    const {{ module_prefix }}_workflowID = {{ module.functions[0] }}(token);
+                {% endif %}
+                {% if module.functions|length >= 2 %}
+                    {{ module.functions[1] }}(token, {{ module_prefix }}_workflowID);
+                {% endif %}
+                {% if module.functions|length >= 3 %}
+                    {{ module.functions[2] }}(token, {{ module_prefix }}_workflowID);
+                {% endif %}
+            {% endfor %}
+        }
+    }
+}
