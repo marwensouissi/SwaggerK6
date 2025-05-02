@@ -144,6 +144,6 @@ export default function () {
 }
 
 // ✅ Teardown: Logging Completion
-export function teardown() {
+ function teardown() {
     console.log("✅ Test execution completed.");
 }

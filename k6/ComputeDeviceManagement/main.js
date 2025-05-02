@@ -1,16 +1,16 @@
 import http from 'k6/http';
 import { check, sleep } from 'k6';
-import {post_abstract_with_payload, delete_abstract_without_payload, get_abstract_without_payload } from '../../utils/abstract.js';
+import {post_abstract_with_payload, delete_abstract_without_payload, get_abstract_without_payload } from '../utils/abstract.js';
 import { login } from '../AuthManagement/auth.js';
 import { randomString } from 'https://jslib.k6.io/k6-utils/1.2.0/index.js';
 
-export default function workflow() {
     const BASE_URL = 'https://dev-itona.xyz/api';
 
     // ************* Login *********************//
-    const token = login("henchirnouha02@gmail.com", "123456789");
 
     //************* CREATE Compute Device (POST request) *********************//
+    export  function Create_Compute_Device(token) {
+
     const post_metadata_compute_device = {
         url: `${BASE_URL}/computeDevice`,
         payload: {
@@ -40,12 +40,16 @@ export default function workflow() {
     };
     const post_compute_device_result = post_abstract_with_payload(post_metadata_compute_device);
     console.log("create compute device: ",post_compute_device_result); 
-
-    const computeDeviceID = post_compute_device_result.data.id.id; // Extract the device ID from the response
-    console.log(`Compute device ID: ${computeDeviceID}`); // Log the device ID
     sleep(0.5);
 
+    return post_compute_device_result.data.id.id;
+
+}
+
+export  function Download_config_file(token,computeDeviceID) {
+
     //************* DOWNLOAD configration file (GET request) *********************//
+    
     const get_metadata_configFile = {
         url: `${BASE_URL}/device-connectivity/gateway-launch/${computeDeviceID}/docker-compose/download`,
         tag: "test",
@@ -58,7 +62,13 @@ export default function workflow() {
     console.log("get config file: ",get_configFile_result); 
     sleep(0.5);
 
+}
+
+export  function Delete_Compute_Device(token,computeDeviceID) {
+
     //************* DELETE Compute Device (DELETE request) *********************//
+
+
     const delete_metadata_compute_device = {
         url: `${BASE_URL}/computeDevice/${computeDeviceID}`,
         tag: "test",

@@ -1,16 +1,16 @@
 import http from 'k6/http';
 import { check, sleep } from 'k6';
-import {post_abstract_with_payload, delete_abstract_without_payload } from '../../utils/abstract.js';
+import {post_abstract_with_payload, delete_abstract_without_payload } from '../utils/abstract.js';
 import { login } from '../AuthManagement/auth.js';
 import { randomString } from 'https://jslib.k6.io/k6-utils/1.2.0/index.js';
 
-export default function workflow() {
     const BASE_URL = 'https://dev-itona.xyz/api';
 
     // ************* Login *********************//
-    const token = login("henchirnouha02@gmail.com", "123456789");
 
     //************* CREATE Package (POST request) *********************//
+    export  function create_package(token) {
+
     const post_metadata_package = {
         url: `${BASE_URL}/otaPackage`,
         payload: {
@@ -38,8 +38,13 @@ export default function workflow() {
     const packageID = post_package_response.data.id.id; // Extract the package ID from the response
     console.log(`Package ID: ${packageID}`); // Log the package ID
     sleep(0.5);
+    return packageID;
+}
 
     //************* DELETE OTA updates (DELETE request) *********************//
+
+    export  function delete_package(token,packageID) {
+
     const delete_metadata_package = {
         url: `${BASE_URL}/otaPackage/${packageID}`,
         tag: "test",

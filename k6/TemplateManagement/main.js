@@ -1,16 +1,14 @@
 import http from 'k6/http';
 import { check, sleep } from 'k6';
-import { get_abstract_with_payload, post_abstract_with_payload, put_abstract_with_payload, delete_abstract_without_payload, get_abstract_without_payload } from '../../utils/abstract.js';
+import { get_abstract_with_payload, post_abstract_with_payload, put_abstract_with_payload, delete_abstract_without_payload, get_abstract_without_payload } from '../utils/abstract.js';
 import { login } from '../AuthManagement/auth.js';
 import { randomString } from 'https://jslib.k6.io/k6-utils/1.2.0/index.js';
 
-export default function workflow() {
     const BASE_URL = 'https://dev-itona.xyz/api';
 
-    // ************* Login ********************* //
-    const token = login("henchirnouha02@gmail.com", "123456789");
-
     //*************  CREATE or COPY Template (POST request) *********************//
+    export  function Create_template(token) {
+
     const post_metadata_template = {
         url: `${BASE_URL}/notification/template`,
         payload: {
@@ -43,8 +41,13 @@ export default function workflow() {
     const templateID = post_template_result.data.id.id; // Extract the template ID from the response
     console.log("Template ID: ", templateID); // Log the template ID 
     sleep(0.5);
+return templateID;
+}
+    
 
     //*********************************** DELETE Template *************************************//
+    export  function delete_template(token,templateID) {
+
     const delete_template = {
         url: `${BASE_URL}/notification/template/${templateID}`,
         tag: "test",

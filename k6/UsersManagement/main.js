@@ -1,16 +1,16 @@
 import http from 'k6/http';
 import { check, sleep } from 'k6';
-import { post_abstract_with_payload, delete_abstract_without_payload } from '../../utils/abstract.js';
+import { post_abstract_with_payload, delete_abstract_without_payload } from '../utils/abstract.js';
 import { login } from '../AuthManagement/auth.js';
 import { randomString } from 'https://jslib.k6.io/k6-utils/1.2.0/index.js';
 
-export default function workflow() {
     const BASE_URL = 'https://dev-itona.xyz/api';
 
     // ************* Login *********************//
-    const token = login("henchirnouha02@gmail.com", "123456789");
 
     //************* CREATE User (POST request) *********************//
+    export  function create_user(token) {
+
     const post_metadata_user = {
         url: `${BASE_URL}/user/assign-roles?sendActivationMail=true`,
         payload: {
@@ -45,8 +45,12 @@ export default function workflow() {
     const userID = post_user_result.data.id.id; // Extract the user ID from the response
     console.log("user ID: ", userID); // Log the customer ID 
     sleep(0.5);
+return userID;
+}
 
     //************* EDIT User (POST request) *********************//
+    export  function edit_user(token,userID) {
+
     const edit_metadata_user = {
         url: `${BASE_URL}/user?sendActivationMail=false`,
         payload: {
@@ -93,8 +97,13 @@ export default function workflow() {
     const edit_user_result = post_abstract_with_payload(edit_metadata_user);
     console.log("edit user: ",edit_user_result); 
     sleep(0.5);
+
+}
     
      //************* DELETE User (DELETE request) *********************//
+     export  function delete_user(token,userID) {
+
+     
      const delete_metadata_user = {
         url: `${BASE_URL}/user/${userID}`,
         payload: null,

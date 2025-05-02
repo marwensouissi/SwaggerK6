@@ -1,16 +1,16 @@
 import http from 'k6/http';
 import { check, sleep } from 'k6';
-import { post_abstract_with_payload, delete_abstract_without_payload, get_abstract_without_payload } from '../../utils/abstract.js';
+import { post_abstract_with_payload, delete_abstract_without_payload, get_abstract_without_payload } from '../utils/abstract.js';
 import { login } from '../AuthManagement/auth.js';
 import { randomString } from 'https://jslib.k6.io/k6-utils/1.2.0/index.js';
 
-export default function workflow() {
     const BASE_URL = 'https://dev-itona.xyz/api';
 
     // ************* Login *********************//
-    const token = login("henchirnouha02@gmail.com", "123456789");
 
     //************* CREATE or UPDATE Dashboard (POST request) *********************//
+    export  function Create_dashboard(token) {
+
     const post_metadata_dashboard = {
         url: `${BASE_URL}/dashboard`,
         payload: {
@@ -35,9 +35,15 @@ export default function workflow() {
     const dashId = post_dashboard_result.data.id.id; // Extract the dashboard ID from the response
     console.log("Dashboard ID: ", dashId); // Log the dashboard ID 
     sleep(0.5);
+    return dashId;
+
+}
 
 
     //******************* IMPORT Dashboard (POST request) *********************//
+
+    export  function Edit_dashboard(token,dashId) {
+
     const post_import_dashboard = {
         url: `${BASE_URL}/dashboard`,
         payload: {
@@ -120,8 +126,14 @@ export default function workflow() {
     console.log("import dashboard : ",post_import_result); 
     sleep(0.5);
 
+}
+
+
 
     //************* EXPORT dashboard (GET request) *********************//
+
+    export  function get_dashboard(token,dashId) {
+
     const get_metadata_dashboard = {
         url: `${BASE_URL}/dashboard/${dashId}`,
         tag: "test",
@@ -131,10 +143,15 @@ export default function workflow() {
         token: token,
     };
     const get_dashboard_result = get_abstract_without_payload(get_metadata_dashboard);
-    console.log("export dashboard : ",get_dashboard_result); 
     sleep(0.5);
-    
+
+    return get_dashboard_result;
+}
+
     // ********************* DELETE Dashboard (DELETE request) *********************//
+
+export  function delete_dashboard(token,dashId) {
+
     const delete_metadata_dashboard = {
         url: `${BASE_URL}/dashboard/${dashId}`,
         tag: "test",
@@ -146,4 +163,5 @@ export default function workflow() {
     const delete_dashboard_response = delete_abstract_without_payload(delete_metadata_dashboard);
     console.log("delete dashboard : ",delete_dashboard_response); 
     sleep(0.5); 
+
 }

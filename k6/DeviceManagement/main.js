@@ -1,17 +1,17 @@
 import http from 'k6/http';
 import { check, sleep } from 'k6';
-import { get_abstract_with_payload, post_abstract_with_payload, put_abstract_with_payload } from '../../utils/abstract.js';
+import { get_abstract_with_payload, post_abstract_with_payload, put_abstract_with_payload } from '../utils/abstract.js';
 import { login } from '../AuthManagement/auth.js';
 import { randomString } from 'https://jslib.k6.io/k6-utils/1.2.0/index.js';
 
-export default function workflow() {
     const BASE_URL = 'https://dev-itona.xyz/api';
 
-    // ************* Login *********************/
-    const token = login("marwen.souissi00@gmail.com", "marwen123");
 
 
-    //*************  POST CREATE DEVICE *********************/
+    //*************  POST CREATE DEVICE *********************/ 
+
+    export  function Create_device(token) {
+
     const post_metadata_device = {
         url: `${BASE_URL}/device`,
         payload: {
@@ -33,8 +33,14 @@ export default function workflow() {
 
     const deviceId = post_device_result.data.id.id;
     sleep(0.5);
+    return deviceId;
+
+}
 
     //************* FETCH DEVICE CREDENTIALS *********************/
+
+    export  function Get_device(token,deviceId) {
+
     const get_device_credentials = {
         url: `${BASE_URL}/device/${deviceId}/credentials`,
         tag: "device",
@@ -51,3 +57,4 @@ export default function workflow() {
     //************* UPDATE DEVICE (PUT REQUEST) *********************/
 
 }
+

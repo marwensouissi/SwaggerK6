@@ -20,16 +20,15 @@ export default function () {
         const token = login(user.email, PASSWORD);
         if (token) {
             {% for module in test_cases %}
-                {% set module_prefix = module.module.split('/')[-1].replace('.js', '').replace('-', '_') %}
-                {% if module.functions|length >= 1 %}
-                    const {{ module_prefix }}_workflowID = {{ module.functions[0] }}(token);
-                {% endif %}
-                {% if module.functions|length >= 2 %}
-                    {{ module.functions[1] }}(token, {{ module_prefix }}_workflowID);
-                {% endif %}
-                {% if module.functions|length >= 3 %}
-                    {{ module.functions[2] }}(token, {{ module_prefix }}_workflowID);
-                {% endif %}
+                {% set module_folder = module.module.split('/')[-2] %}
+                {% set id_var = module_folder | replace('Management', '') | replace('-', '_') ~ 'ID' %}
+                {% for func in module.functions %}
+                    {% if loop.index0 == 0 %}
+                        const {{ id_var }} = {{ func }}(token);
+                    {% else %}
+                        {{ func }}(token, {{ id_var }});
+                    {% endif %}
+                {% endfor %}
             {% endfor %}
         }
     }

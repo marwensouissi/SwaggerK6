@@ -1,13 +1,24 @@
 {
-    "stages": [
-      { "duration": "1m", "target": 1 }
-
-    ],
-    "test_cases": [
-      {
-        "module": "../CameraManagement/main.js",
-        "functions": ["createCamera", "editCamera", "exportToPDF" , "exportToCSV" , "deleteCamera"]
-      }
-    ]
-  }
-  
+  "stages": [
+    { "duration": "20s", "target": 1 }
+  ],
+  "test_cases": [
+    {
+      "module": "../DashboardManagement/main.js",
+      "functions": [
+        "Create_dashboard",
+        "Edit_dashboard",
+        "get_dashboard",
+        "delete_dashboard"
+      ]
+    },
+    {
+      "module": "../RoleManagement/main.js",
+      "functions": [
+        "create_role",
+        "edit_role",
+        "delete_role"
+      ]
+    }
+  ]
+}

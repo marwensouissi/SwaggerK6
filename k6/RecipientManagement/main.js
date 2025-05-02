@@ -1,16 +1,16 @@
 import http from 'k6/http';
 import { check, sleep } from 'k6';
-import { get_abstract_with_payload, post_abstract_with_payload, put_abstract_with_payload, delete_abstract_without_payload, get_abstract_without_payload } from '../../utils/abstract.js';
+import { get_abstract_with_payload, post_abstract_with_payload, put_abstract_with_payload, delete_abstract_without_payload, get_abstract_without_payload } from '../utils/abstract.js';
 import { login } from '../AuthManagement/auth.js';
 import { randomString } from 'https://jslib.k6.io/k6-utils/1.2.0/index.js';
 
-export default function workflow() {
     const BASE_URL = 'https://dev-itona.xyz/api';
 
     // ************* Login ********************* //
-    const token = login("henchirnouha02@gmail.com", "123456789");
 
     //*************  CREATE Recipient (POST request) *********************//
+    export  function create_recipient(token) {
+
     const post_metadata_recipient = {
         url: `${BASE_URL}/notification/target`,
         payload: {
@@ -35,9 +35,15 @@ export default function workflow() {
   
     const notificationID = post_recipient_response.data.id.id; // extract the recipient ID from the response
     console.log(`Recipient ID: ${notificationID}`); // Log the recipient ID
+
     sleep(0.5);
+    return notificationID;
+}
+
     
-    // *********************     UPDATE Recipient (POST request)   *********************//         
+    // *********************     UPDATE Recipient (POST request)   *********************//   
+    export  function edit_recipient(token,notificationID) {
+      
     const update_metadata_recipient = {
         url: `${BASE_URL}/notification/target`,
         payload: {
@@ -60,8 +66,13 @@ export default function workflow() {
     const update_recipient_response = post_abstract_with_payload(update_metadata_recipient);
     console.log("update recipient : ",update_recipient_response);
     sleep(0.5);
+    }
+
 
     //*************  GET recipients list (GET request) *********************//
+    export  function get_recipient(token,notificationID) {
+
+
     const get_list_metadata = {
         url: `${BASE_URL}/notification/targets?pageSize=10&page=0&sortProperty=createdTime&sortOrder=DESC`,
         tag: 'test',
@@ -109,9 +120,12 @@ export default function workflow() {
     const post_copy_response = post_abstract_with_payload(post_copy_recipient);
     console.log("copy recipient:",post_copy_response);
     sleep(0.5);
+}
 
     
     //*************  DELETE recipient (DELETE request) *********************//
+    export  function delete_recipient(token,notificationID) {
+
     const delete_notification_metadata = {
         url: `${BASE_URL}/notification/target/${notificationID}`,
         tag: 'test',
@@ -125,6 +139,3 @@ export default function workflow() {
     sleep(0.5);
 
   }
-
-
-

@@ -1,17 +1,17 @@
 import http from 'k6/http';
 import { check, sleep } from 'k6';
-import { delete_abstract_without_payload, get_abstract_with_payload, post_abstract_with_payload, put_abstract_with_payload } from '../../utils/abstract.js';
+import { delete_abstract_without_payload, get_abstract_with_payload, post_abstract_with_payload, put_abstract_with_payload } from '../utils/abstract.js';
 import { login } from '../AuthManagement/auth.js';
 import { randomString } from 'https://jslib.k6.io/k6-utils/1.2.0/index.js';
 
-export default function workflow() {
     const BASE_URL = 'https://dev-itona.xyz/api';
 
     // ************* Login *********************/
-    const token = login("hrnou25@gmail.com", "123456789");
 
 
     //*************  CREATE Subdomain (POST Request) *********************/
+    export  function Create_subdomain(token) {
+
     const post_metadata_subdomain = {
         url: `https://dev-itona.xyz/graph/v1/graphql`,
         payload: {
@@ -44,10 +44,13 @@ export default function workflow() {
     console.log("Create domain response: ", post_subdomain_response);
 
     const subdomainId = post_subdomain_response.data.data.createSubdomain.subdomain; 
-    console.log("Subdomain ID: ", subdomainId); // Log de l'ID du sous-domaine
     sleep(0.5);
+    return subdomainId ;
 
+}
     //*************  EDIT Subdomain (Post Request) *********************//
+    export  function Edit_subdomain(token,subdomainId) {
+
     const put_metadata_subdomain = {
         url: `https://dev-itona.xyz/graph/v1/graphql`,
         payload: {
@@ -76,7 +79,13 @@ export default function workflow() {
     console.log("Edit domain response: ", put_subdomain_response);
     sleep(0.5);
 
+}
+
+
     //*************  DELETE Subdomain (POST Request) *********************//
+
+    export  function Delete_subdomain(token,subdomainId) {
+
     const delete_metadata_subdomain = {
         url: `https://dev-itona.xyz/graph/v1/graphql`,
         payload: {

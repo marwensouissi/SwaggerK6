@@ -1,16 +1,16 @@
 import http from 'k6/http';
 import { check, sleep } from 'k6';
-import { get_abstract_with_payload, post_abstract_with_payload, put_abstract_with_payload, delete_abstract_without_payload } from '../../utils/abstract.js';
+import { get_abstract_with_payload, post_abstract_with_payload, put_abstract_with_payload, delete_abstract_without_payload } from '../utils/abstract.js';
 import { login } from '../AuthManagement/auth.js';
 import { randomString } from 'https://jslib.k6.io/k6-utils/1.2.0/index.js';
 
-export default function workflow() {
     const BASE_URL = 'https://dev-itona.xyz/api';
 
     // ************* Login *********************//
-    const token = login("henchirnouha02@gmail.com", "123456789");
 
     //************* CREATE Role (POST request) *********************//
+    export  function create_role(token) {
+
     const post_metadata_role = {
         url: `${BASE_URL}/role`,
         payload: {
@@ -46,8 +46,12 @@ export default function workflow() {
     const roleID = post_role_result.data.id.id; // Extract the role ID from the response
     console.log("role ID: ", roleID); // log the role ID
     sleep(0.5);
+    return roleID;
+}
 
     //************* EDIT Role (POST request) *********************//
+    export  function edit_role(token,roleID) {
+
     const edit_metadata_role = {
         url: `${BASE_URL}/role`,
         payload: {
@@ -83,7 +87,14 @@ export default function workflow() {
     const edit_role_result = post_abstract_with_payload(edit_metadata_role);
     console.log(edit_role_result); 
 
+}
+
+
+
     //************* DELETE Role (DELETE request) *********************//
+
+    export  function delete_role(token,roleID) {
+
     const delete_metadata_role = {
         url: `${BASE_URL}/role/${roleID}`,
         tag: "test",
@@ -95,5 +106,6 @@ export default function workflow() {
     const delete_role_result = delete_abstract_without_payload(delete_metadata_role);
     console.log("delete role:",delete_role_result); 
     sleep(0.5);
+    
 
 }

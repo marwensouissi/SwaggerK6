@@ -1,16 +1,17 @@
 import http from 'k6/http';
 import { check, sleep } from 'k6';
-import {post_abstract_with_payload, delete_abstract_without_payload } from '../../utils/abstract.js';
+import {post_abstract_with_payload, delete_abstract_without_payload } from '../utils/abstract.js';
 import { login } from '../AuthManagement/auth.js';
 import { randomString } from 'https://jslib.k6.io/k6-utils/1.2.0/index.js';
 
-export default function workflow() {
     const BASE_URL = 'https://dev-itona.xyz/api';
 
     // ************* Login *********************//
-    const token = login("henchirnouha02@gmail.com", "123456789");
 
     //************* CREATE Chain (POST request) *********************//
+
+    export  function create_Chain(token,userID) {
+
     const post_metadata_chain = {
         url: `${BASE_URL}/vidAnalChain`,
         payload: {
@@ -43,8 +44,13 @@ export default function workflow() {
     const chainId = post_chain_result.data.id.id; // Extract the chain ID from the response
     console.log(`Chain ID: ${chainId}`); // Log the chain ID
     sleep(0.5);
+    return chainId;
+
+  }
 
     //************* EDIT Chain (POST request) *********************//
+    export  function edit_Chain(token,chainId) {
+
     const edit_metadata_chain = {
         url: `${BASE_URL}/vidAnalChain`,
         payload: {
@@ -74,7 +80,12 @@ export default function workflow() {
     console.log("edit chain: ",edit_chain_result); 
     sleep(0.5);
 
+  }
+
     // **********************  DELETE vidanalytic (DELETE request) ********************* //
+
+    export  function delete_Chain(token,chainId) {
+
     const delete_metadata_chain = {
       url: `${BASE_URL}/vidAnalChain/${chainId}`,
       tag: "delete_request",
