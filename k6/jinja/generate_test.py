@@ -16,10 +16,12 @@ env = Environment(
 template = env.get_template('template.j2')  # your jinja template filename
 
 # Render the template with the config data
-rendered = template.render(
-    stages=config['stages'],
-    test_cases=config['test_cases']
-)
+# rendered = template.render(
+#     stages=config['stages'],
+#     test_cases=config['test_cases']
+# )
+rendered = template.render(tests=config["test_cases"], stages=config.get("stages", []))  # ✅
+
 
 # Write the rendered JS to a file
 with open('generated_test.js', 'w') as f:

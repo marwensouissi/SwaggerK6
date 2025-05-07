@@ -8,19 +8,17 @@
     {
       "function": "create_device",
       "method": "POST",
-      "url": "https://dev-itona.xyz/device?accessToken={{token}}",
+      "url": "https://dev-itona.xyz/api/device?accessToken={{token}}",
       "save_as": "create_device",
       "payload": {
-        "name": "Sensor A",
-        "type": "temperature"
+      "name": "{{randomString(15)}}",
+        "type": "{{randomString(15)}}"
       }
     },
-    {
-      "function": "delete_device",
-      "method": "DELETE",
-      "url": "https://dev-itona.xyz/api/device/{{create_device.id.id}}?accessToken={{token}}",
-      "payload": {}
-    },    {
+
+    { 
+
+    
       "function": "delete_device",
       "method": "DELETE",
       "url": "https://dev-itona.xyz/api/device/{{create_device.id.id}}?accessToken={{token}}",

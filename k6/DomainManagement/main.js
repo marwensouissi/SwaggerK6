@@ -65,8 +65,8 @@ import { randomString } from 'https://jslib.k6.io/k6-utils/1.2.0/index.js';
                 }
             }`,
             variables: {
-                id: 1485,
-                theme_id: 534
+                id: $input.id,
+                theme_id: $input.theme_id
             }
         },
         tag: "test",

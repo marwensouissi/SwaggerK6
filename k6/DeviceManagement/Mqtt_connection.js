@@ -2,11 +2,7 @@ import { check, sleep } from 'k6';
 import mqtt from 'k6/x/mqtt';
 import { SharedArray } from 'k6/data';
 
-// ✅ K6 Load Testing Options
-export let options = {
-    vus: 4,
-    duration: '10m', // you can increase this
-};
+
 
 // ✅ Load credentials from JSON file
 const credentialsData = new SharedArray('device_credentials', function () {
