@@ -1,6 +1,9 @@
 import React from "react"
 import PropTypes from "prop-types"
 
+
+
+
 class StandaloneLayout extends React.Component {
 
   static propTypes = {

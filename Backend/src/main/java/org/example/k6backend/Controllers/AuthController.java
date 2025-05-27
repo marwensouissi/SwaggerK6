@@ -23,7 +23,7 @@ public class AuthController {
     private UserService userService;
 
 
-    @PostMapping("/login-test")
+    @PostMapping("/login")
     public ResponseEntity<Map<String, String>> loginAndCreateUser(@RequestBody Map<String, String> payload) {
         String username = payload.get("username");
         String password = payload.get("password");
@@ -46,6 +46,12 @@ public class AuthController {
         List<Scenario> scenarios = userService.getCurrentUserScenarios();
         return ResponseEntity.ok(scenarios);
     }
+
+    @PostMapping("/logout")
+    public ResponseEntity<?> logout() {
+        return ResponseEntity.ok().body("Logged out successfully");
+    }
+
 
 }
 

@@ -7,6 +7,28 @@ const ListSelectedApis = () => {
   const dispatch = useDispatch();
   const [isModalOpen, setModalOpen] = useState(false);
 
+  const saveScenarioToBackend = async (scenarioData) => {
+    try {
+      const response = await fetch('/scenarios', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(scenarioData), // raw JSON, not wrapped in an object
+      });
+  
+      if (!response.ok) {
+        throw new Error('Failed to save scenario');
+      }
+  
+      const result = await response.json();
+      console.log("✅ Scenario saved:", result);
+    } catch (error) {
+      console.error("❌ Error saving scenario:", error);
+    }
+  };
+  
+
   const apiData = useSelector((state) => {
     const requestData = state.getIn(['oas3', 'requestData']);
     if (!requestData) return [];
@@ -211,20 +233,25 @@ const ListSelectedApis = () => {
           backgroundColor: '#f9f9f9',
         }}
       >
-        <button
-          style={{
-            padding: '10px 20px',
-            backgroundColor: '#007bff',
-            color: '#fff',
-            border: 'none',
-            borderRadius: '6px',
-            fontSize: '16px',
-            cursor: 'pointer',
-          }}
-          onClick={() => setModalOpen(true)}
-        >
-          Add APIs to Test
-        </button>
+<button
+  style={{
+    padding: '10px 20px',
+    backgroundColor: '#007bff',
+    color: '#fff',
+    border: 'none',
+    borderRadius: '6px',
+    fontSize: '16px',
+    cursor: 'pointer',
+  }}
+  onClick={async () => {
+    const finalResult = generateFinalResult([{ duration: "10s", target: 1 }], apiData); // you can modify stages dynamically
+    await saveScenarioToBackend(finalResult);
+    setModalOpen(true); // open modal after saving
+  }}
+>
+  Add APIs to Test
+</button>
+
       </div>
     </div>
   );
