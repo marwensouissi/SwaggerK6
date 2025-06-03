@@ -74,22 +74,22 @@ export default class Responses extends React.Component {
       oas3Selectors,
       oas3Actions,
     } = this.props
-    let defaultCode = defaultStatusCode( responses )
-
-    const ContentType = getComponent( "contentType" )
-    const LiveResponse = getComponent( "liveResponse" )
-    const Response = getComponent( "response" )
-
+    let defaultCode = defaultStatusCode(responses)
+  
+    const ContentType = getComponent("contentType")
+    const LiveResponse = getComponent("liveResponse")
+    const Response = getComponent("response")
+  
     let produces = this.props.produces && this.props.produces.size ? this.props.produces : Responses.defaultProps.produces
-
+  
     const isSpecOAS3 = specSelectors.isOAS3()
-
+  
     const acceptControllingResponse = isSpecOAS3 ?
       getAcceptControllingResponse(responses) : null
-
+  
     const regionId = createHtmlReadyId(`${method}${path}_responses`)
     const controlId = `${regionId}_select`
-
+  
     return (
       <div className="responses-wrapper">
         {/* <div className="opblock-section-header">
@@ -118,9 +118,8 @@ export default class Responses extends React.Component {
                                                 displayRequestDuration={ displayRequestDuration } />
                                   <h4>Responses</h4>
                                 </div>
-
-          }
-
+          } */}
+  
           <table aria-live="polite" className="responses-table" id={regionId} role="region">
             <thead>
               <tr className="responses-header">
@@ -131,39 +130,45 @@ export default class Responses extends React.Component {
             </thead>
             <tbody>
               {
-                responses.entrySeq().map( ([code, response]) => {
-
+                responses.entrySeq().map(([code, response]) => {
                   let className = tryItOutResponse && tryItOutResponse.get("status") == code ? "response_current" : ""
-                  return (
-                    <Response key={ code }
-                              path={path}
-                              method={method}
-                              specPath={specPath.push(code)}
-                              isDefault={defaultCode === code}
-                              fn={fn}
-                              className={ className }
-                              code={ code }
-                              response={ response }
-                              specSelectors={ specSelectors }
-                              controlsAcceptHeader={response === acceptControllingResponse}
-                              onContentTypeChange={this.onResponseContentTypeChange}
-                              contentType={ producesValue }
-                              getConfigs={ getConfigs }
-                              activeExamplesKey={oas3Selectors.activeExamplesMember(
-                                path,
-                                method,
-                                "responses",
-                                code
-                              )}
-                              oas3Actions={oas3Actions}
-                              getComponent={ getComponent }/>
+  
+                  if (code === "200") {
+                    return (
+                      <Response key={code}
+                        path={path}
+                        method={method}
+                        specPath={specPath.push(code)}
+                        isDefault={defaultCode === code}
+                        fn={fn}
+                        className={className}
+                        code={code}
+                        response={response}
+                        specSelectors={specSelectors}
+                        controlsAcceptHeader={response === acceptControllingResponse}
+                        onContentTypeChange={this.onResponseContentTypeChange}
+                        contentType={producesValue}
+                        getConfigs={getConfigs}
+                        activeExamplesKey={oas3Selectors.activeExamplesMember(
+                          path,
+                          method,
+                          "responses",
+                          code
+                        )}
+                        oas3Actions={oas3Actions}
+                        getComponent={getComponent} />
                     )
+                  }
+  
+                  return null
                 }).toArray()
               }
             </tbody>
           </table>
-        </div> */}
+  
+        {/* </div> */}
       </div>
     )
   }
+  
 }

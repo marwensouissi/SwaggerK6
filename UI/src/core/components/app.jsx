@@ -1,33 +1,52 @@
-/**
- * @prettier
- */
 import React from "react"
 import PropTypes from "prop-types"
+import SwaggerUpload from "../components/SwaggerUpload"
+import { checkIfSwaggerExists } from "../../services/swaggerService"
 
 class App extends React.Component {
   constructor(props) {
     super(props)
-    const savedToken = sessionStorage.getItem("authToken")
 
     this.state = {
-      isLoggedIn: !!savedToken,
-      token: savedToken,
+      isSwaggerReady: false,
+      isSwaggerChecked: false,
+      isLoggedIn: false,
+      token: null,
       username: "",
       password: "",
       error: null,
     }
+  }
 
-    if (savedToken && props.system?.authActions?.authorize) {
-      props.system.authActions.authorize({
-        apiKey: {
-          name: "Authorization",
-          schema: {
-            type: "apiKey",
-            in: "header",
+  async componentDidMount() {
+    const exists = await checkIfSwaggerExists()
+
+    if (exists) {
+      const savedToken = sessionStorage.getItem("authToken")
+      if (savedToken && this.props.system?.authActions?.authorize) {
+        this.props.system.authActions.authorize({
+          apiKey: {
             name: "Authorization",
+            schema: {
+              type: "apiKey",
+              in: "header",
+              name: "Authorization",
+            },
+            value: `Bearer ${savedToken}`,
           },
-          value: `Bearer ${savedToken}`,
-        },
+        })
+      }
+
+      this.setState({
+        isSwaggerChecked: true,
+        isSwaggerReady: true,
+        isLoggedIn: !!savedToken,
+        token: savedToken,
+      })
+    } else {
+      this.setState({
+        isSwaggerChecked: true,
+        isSwaggerReady: false,
       })
     }
   }
@@ -61,8 +80,7 @@ class App extends React.Component {
 
       sessionStorage.setItem("authToken", token)
 
-      const { system } = this.props
-      system?.authActions?.authorize({
+      this.props.system?.authActions?.authorize({
         apiKey: {
           name: "Authorization",
           schema: {
@@ -238,26 +256,54 @@ class App extends React.Component {
       </div>
     )
   }
-
   getLayout() {
     const { getComponent, layoutSelectors } = this.props
     const layoutName = layoutSelectors.current()
     const Component = getComponent(layoutName, true)
-
-    return Component
-      ? Component
-      : () => <h1>No layout defined for &quot;{layoutName}&quot;</h1>
+    return Component || (() => <h1>No layout defined for "{layoutName}"</h1>)
   }
 
   render() {
-    const { isLoggedIn } = this.state
+    const { isSwaggerChecked, isSwaggerReady, isLoggedIn } = this.state
+
+    if (!isSwaggerChecked) return null
+
+    if (!isSwaggerReady) {
+      return <SwaggerUpload onSuccess={() => window.location.reload()} />
+
+    }
 
     if (!isLoggedIn) {
       return this.renderLogin()
     }
 
     const Layout = this.getLayout()
-    return <Layout />
+    return (
+      <div>
+        <button
+          onClick={() => {
+            sessionStorage.removeItem("authToken")
+            this.setState({ isLoggedIn: false, token: null })
+            this.props.system?.authActions?.logout()
+          }}
+          style={{
+            position: "fixed",
+            top: "10px",
+            right: "10px",
+            zIndex: 1000,
+            padding: "10px 16px",
+            borderRadius: "6px",
+            backgroundColor: "#ff4d4f",
+            color: "#fff",
+            border: "none",
+            cursor: "pointer"
+          }}
+        >
+          Logout
+        </button>
+        <Layout />
+      </div>
+    )
   }
 }
 
