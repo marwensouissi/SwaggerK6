@@ -1,0 +1,19 @@
+import http from 'k6/http';
+import { check } from 'k6';
+
+export let options = {
+stages: [
+[[#th:each="stage : ${stages}"]]
+    { duration: '[[${stage.duration}]]', target: [[${stage.target}]] },
+[[/th:each]]
+]
+};
+
+export default function () {
+[[#th:each="test : ${tests}"]]
+    let res = http.[[${test.method.toLowerCase()}]]('[[${test.url}]]'[[${test.payload != null}]] ? , JSON.stringify([[${test.payload}]]): '');
+    check(res, {
+        "status is 200": (r) => r.status === 200
+    });
+[[/th:each]]
+}
