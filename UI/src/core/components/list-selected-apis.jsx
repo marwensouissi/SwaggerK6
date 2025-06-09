@@ -8,17 +8,27 @@ const ListSelectedApis = () => {
   const [isModalOpen, setModalOpen] = useState(false);
 
   const saveScenarioToBackend = async (scenarioData) => {
+    const token = sessionStorage.getItem("authToken") || "";
+  
+    console.log("JWT token:", token); // Debug token
+  
+    if (!token) {
+      alert("No JWT token found. Please login first.");
+      return;
+    }
+  
     try {
-      const response = await fetch('/scenarios', {
-        method: 'POST',
+      const response = await fetch("http://localhost:6060/api/scenarios", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
         },
-        body: JSON.stringify(scenarioData), // raw JSON, not wrapped in an object
+        body: JSON.stringify(scenarioData),
       });
   
       if (!response.ok) {
-        throw new Error('Failed to save scenario');
+        throw new Error("Failed to save scenario");
       }
   
       const result = await response.json();
@@ -26,6 +36,15 @@ const ListSelectedApis = () => {
     } catch (error) {
       console.error("❌ Error saving scenario:", error);
     }
+    const generateTest = await fetch("http://localhost:6060/api/api/k6/generate", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`,
+      },
+      body: JSON.stringify(scenarioData),
+    });
+    
   };
   
 
@@ -63,6 +82,8 @@ const ListSelectedApis = () => {
       duration: stage.duration.endsWith('s') ? stage.duration : `${stage.duration}s`,
       target: Number(stage.target),
     }));
+
+
   
     const test_cases = apiData
       .filter(({ functionName }) => !!functionName)
@@ -129,8 +150,8 @@ const ListSelectedApis = () => {
       <LaunchTestModal
         isOpen={isModalOpen}
         onClose={() => setModalOpen(false)}
-        onLaunch={(stageInputs) => handleLaunchTest(stageInputs)}
-            />
+        onLaunch={(stageInputs, executionOption) => handleLaunchTest(stageInputs, executionOption)}
+        />
 
       {/* Scrollable list container */}
       <div
