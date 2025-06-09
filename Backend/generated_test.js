@@ -13,19 +13,25 @@ const PASSWORD = "123123123";
 
 export let options = {
 stages: [
-    { duration: '1s', target: 1 }]
+    { duration: '2s', target: 2 }]
 };
 
 export default function () {
 const user = signup();
 const token = login(user.email, PASSWORD);
 
-        const test = post_abstract_with_payload({
-        url: `https://dev-itona.xyz/api/device?accessToken=${token}`,
+        const createDev = post_abstract_with_payload({
+        url: `/api/computeDevice`,
         token: token,
-        tag: "test",
-        job: "test",
-            payload: {
-                "label": "Room 234 Sensor", "name": randomString(15), "type": "Temperature Sensor"}
+        tag: "createDevssssssss",
+        job: "createDevssssssss",
+            payload: {"additionalInfo": {}, "attributes": [{}], "customerId": {"entityType": "CUSTOMER", "id": "784f394c-42b6-435a-983c-b7beff2784f9"}, "deviceData": {"configuration": {}, "transportConfiguration": {}}, "deviceProfileId": {"entityType": "DEVICE_PROFILE", "id": "784f394c-42b6-435a-983c-b7beff2784f9"}, "deviceToken": "string", "diskSize": 0, "firmwareId": {"entityType": "OTA_PACKAGE", "id": "784f394c-42b6-435a-983c-b7beff2784f9"}, "gpuType": "string", "id": {"entityType": "DEVICE", "id": "784f394c-42b6-435a-983c-b7beff2784f9"}, "label": "Room 234 Sensor", "name": "randomString(15)", "publicKey": "string", "region": "string", "sharedAttributes": [{}], "softwareId": {"entityType": "OTA_PACKAGE", "id": "784f394c-42b6-435a-983c-b7beff2784f9"}, "tenantId": {"entityType": "TENANT", "id": "784f394c-42b6-435a-983c-b7beff2784f9"}, "type": "Temperature Sensor", "userCreatorId": {"entityType": "USER", "id": "784f394c-42b6-435a-983c-b7beff2784f9"}}
+        });
+        const pub = post_abstract_with_payload({
+        url: `/api/customer/public/device/{{createDev.data.id.id}}`,
+        token: token,
+        tag: "pub",
+        job: "pub",
+            payload: {}
         });
 }

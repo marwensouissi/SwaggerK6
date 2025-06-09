@@ -95,7 +95,7 @@ public class AuthService {
                             if (existingUser == null) {
                                 User user = new User();
                                 user.setUsername(username);
-                                user.setPassword(password); // ⚠️ Don't store plain text in production
+                                user.setPassword(password);
                                 userRepository.save(user);
                             }
 
