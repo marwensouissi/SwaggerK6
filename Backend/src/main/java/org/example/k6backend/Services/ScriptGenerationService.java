@@ -6,11 +6,13 @@ import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.HashMap;
+import java.util.Map;
 
 @Service
 public class ScriptGenerationService {
 
-    public String generateScript(String jsonInput) throws IOException, InterruptedException {
+    public Map<String, String> generateScript(String jsonInput) throws IOException, InterruptedException {
         // Write JSON to a temp file
         Path tempJsonFile = Files.createTempFile("k6_input", ".json");
         Files.writeString(tempJsonFile, jsonInput);
@@ -48,7 +50,7 @@ public class ScriptGenerationService {
             throw new RuntimeException("Python venv not found at: " + venvPython);
         }
 
-        // Build command with platform-independent strings
+        // Build command
         ProcessBuilder pb = new ProcessBuilder(
                 venvPython.toString(),
                 scriptPath.toString(),
@@ -69,7 +71,12 @@ public class ScriptGenerationService {
             throw new RuntimeException("Python script failed");
         }
 
-        return Files.readString(outputFilePath);
+        String scriptContent = Files.readString(outputFilePath);
+
+        Map<String, String> result = new HashMap<>();
+        result.put("filename", uniqueFilename);
+        result.put("content", scriptContent);
+        return result;
     }
 
 
