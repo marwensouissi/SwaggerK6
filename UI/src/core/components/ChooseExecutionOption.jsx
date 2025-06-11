@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { FaCloud, FaServer, FaArrowLeft, FaChartLine, FaExternalLinkAlt } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
-const ChooseExecutionOption = ({ onSelectOption, filename }) => {
+const ChooseExecutionOption = ({ onSelectOption, filename, onBack }) => {
 
   const [hoveredOption, setHoveredOption] = useState(null);
   const [running, setRunning] = useState(false);
@@ -121,6 +121,11 @@ const ChooseExecutionOption = ({ onSelectOption, filename }) => {
   };
 
   const handleBackToOptions = () => {
+    if (window._k6EventSource) {
+      window._k6EventSource.close();
+      window._k6EventSource = null;
+    }
+  
     setRunning(false);
     setLogs('');
     setError(null);
@@ -128,12 +133,13 @@ const ChooseExecutionOption = ({ onSelectOption, filename }) => {
     setTestCompleted(false);
     setShowResults(false);
     setDashboardAvailable(false);
-
-    if (window._k6EventSource) {
-      window._k6EventSource.close();
-      window._k6EventSource = null;
+  
+    // Notify parent to go back or close modal
+    if (onBack) {
+      onBack();
     }
   };
+  
 
   return (
     <motion.div 
@@ -210,15 +216,16 @@ const ChooseExecutionOption = ({ onSelectOption, filename }) => {
             </div>
 
             <div className="modal-actions">
-              <motion.button 
-                className="cancel-btn"
-                onClick={handleCancel}
-                whileHover={{ x: -3 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                <FaArrowLeft style={{ marginRight: '8px' }} />
-                Back
-              </motion.button>
+            <motion.button 
+  className="cancel-btn"
+  onClick={handleBackToOptions}
+  whileHover={{ x: -3 }}
+  whileTap={{ scale: 0.95 }}
+>
+  <FaArrowLeft style={{ marginRight: '8px' }} />
+  Back
+</motion.button>
+
             </div>
 
             {!filename && (
@@ -230,7 +237,7 @@ const ChooseExecutionOption = ({ onSelectOption, filename }) => {
         ) : (
           <>
             <div className="test-header">
-              <h2 className="modal-title" style={{ color: 'white' }}>
+            <h2 className="modal-title" style={{ color: 'white' }}>
                 {running ? 'Running Test: ' : 'Test Results: '}{filename}
                 {testCompleted && <span style={{ color: '#84BD00', marginLeft: '10px' }}>[COMPLETED]</span>}
                 {running && <span style={{ color: '#f39c12', marginLeft: '10px' }}>[RUNNING...]</span>}

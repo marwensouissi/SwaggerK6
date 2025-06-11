@@ -124,22 +124,42 @@ const ListSelectedApis = () => {
     return { stages, test_cases };
   };
 
+  const getMethodColor = (method) => {
+    switch (method.toLowerCase()) {
+      case 'get': return '#28a745';
+      case 'post': return '#0366d6';
+      case 'put': return '#6f42c1';
+      case 'delete': return '#d73a49';
+      case 'patch': return '#ff9a3c';
+      default: return '#6a737d';
+    }
+  };
+
   return (
-    <div
-      style={{
-        height: 'calc(100vh - 200px)',
-        width: '100%',
-        maxWidth: '500px',
-        border: '1px solid #ccc',
-        borderRadius: '10px',
-        overflow: 'hidden',
-        display: 'flex',
-        flexDirection: 'column',
-        backgroundColor: '#fff',
-      }}
-    >
-      <div style={{ padding: '10px', borderBottom: '1px solid #ddd' }}>
-        <h2 style={{ margin: 0 }}>API List</h2>
+    <div style={{
+      height: 'calc(100vh - 200px)',
+      width: '100%',
+      maxWidth: '500px',
+      border: '1px solid #e1e4e8',
+      borderRadius: '12px',
+      overflow: 'hidden',
+      display: 'flex',
+      flexDirection: 'column',
+      backgroundColor: '#ffffff',
+      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)',
+      fontFamily: "'Segoe UI', Roboto, 'Helvetica Neue', sans-serif"
+    }}>
+      <div style={{
+        padding: '16px 20px',
+        borderBottom: '1px solid #eaecef',
+        backgroundColor: '#f6f8fa'
+      }}>
+        <h2 style={{
+          margin: 0,
+          fontSize: '18px',
+          fontWeight: 600,
+          color: '#24292e'
+        }}>API List</h2>
       </div>
   
       <LaunchTestModal
@@ -151,21 +171,31 @@ const ListSelectedApis = () => {
       {showExecutionOptions ? (
         <ChooseExecutionOption
           filename={generatedFilename}
+          onBack={() => setShowExecutionOptions(false)} // Pass onBack prop
+          
           onClose={() => setShowExecutionOptions(false)}
         />
       ) : (
         <>
-          <div
-            style={{
-              flex: 1,
-              overflowY: 'auto',
-              padding: '10px',
-            }}
-          >
+          <div style={{
+            flex: 1,
+            overflowY: 'auto',
+            padding: '16px',
+            backgroundColor: '#fafbfc'
+          }}>
             {!apiData.some(item => item.functionName) ? (
-              <p>No APIs selected.</p>
+              <p style={{
+                textAlign: 'center',
+                color: '#586069',
+                padding: '20px',
+                fontSize: '14px'
+              }}>No APIs selected.</p>
             ) : (
-              <ul style={{ paddingLeft: 0, margin: 0 }}>
+              <ul style={{
+                paddingLeft: 0,
+                margin: 0,
+                listStyle: 'none'
+              }}>
                 {apiData.map(({ api, method, bodyValue, functionName, params }, index) => {
                   if (!functionName) return null;
   
@@ -189,56 +219,116 @@ const ListSelectedApis = () => {
                   }
   
                   return (
-                    <li
-                      key={index}
-                      style={{
-                        marginBottom: '1rem',
-                        listStyle: 'none',
-                        padding: '10px',
-                        border: '1px solid #ccc',
-                        borderRadius: '8px',
-                        background: '#fafafa',
-                      }}
-                    >
-                      <div><strong>Function Name:</strong> {functionName}</div>
-                      <div
-                        style={{
-                          wordBreak: 'break-all',
-                          whiteSpace: 'normal',
-                          overflowWrap: 'anywhere',
-                        }}
-                      >
-                        <strong>API:</strong> {displayApi}
+                    <li key={index} style={{
+                      marginBottom: '16px',
+                      padding: '16px',
+                      border: '1px solid #e1e4e8',
+                      borderRadius: '8px',
+                      background: '#ffffff',
+                      transition: 'box-shadow 0.2s ease'
+                    }}>
+                      <div style={{
+                        display: 'flex',
+                        marginBottom: '8px',
+                        alignItems: 'flex-start'
+                      }}>
+                        <span style={{
+                          fontWeight: 600,
+                          color: '#24292e',
+                          minWidth: '110px',
+                          fontSize: '13px'
+                        }}>Function Name:</span>
+                        <span style={{
+                          color: '#0366d6',
+                          flex: 1,
+                          fontSize: '13px',
+                          wordBreak: 'break-word',
+                          fontWeight: 500
+                        }}>{functionName}</span>
                       </div>
-                      <div><strong>Method:</strong> {method}</div>
+                      <div style={{
+                        display: 'flex',
+                        marginBottom: '8px',
+                        alignItems: 'flex-start'
+                      }}>
+                        <span style={{
+                          fontWeight: 600,
+                          color: '#24292e',
+                          minWidth: '110px',
+                          fontSize: '13px'
+                        }}>API:</span>
+                        <span style={{
+                          color: '#6a737d',
+                          flex: 1,
+                          fontSize: '13px',
+                          wordBreak: 'break-word'
+                        }}>{displayApi}</span>
+                      </div>
+                      <div style={{
+                        display: 'flex',
+                        marginBottom: '8px',
+                        alignItems: 'flex-start'
+                      }}>
+                        <span style={{
+                          fontWeight: 600,
+                          color: '#24292e',
+                          minWidth: '110px',
+                          fontSize: '13px'
+                        }}>Method:</span>
+                        <span style={{
+                          color: getMethodColor(method),
+                          flex: 1,
+                          fontSize: '13px',
+                          fontWeight: 500
+                        }}>{method}</span>
+                      </div>
                       {bodyValue && (
-                        <>
-                          <div><strong>Body:</strong></div>
-                          <pre
-                            style={{
-                              background: '#f0f0f0',
-                              padding: '10px',
-                              borderRadius: '4px',
-                              overflowX: 'auto',
-                              whiteSpace: 'pre-wrap',
-                              wordBreak: 'break-word',
-                            }}
-                          >
+                        <div style={{ marginTop: '12px' }}>
+                          <div style={{
+                            fontWeight: 600,
+                            color: '#24292e',
+                            fontSize: '13px'
+                          }}>Body:</div>
+                          <pre style={{
+                            background: '#f6f8fa',
+                            padding: '12px',
+                            borderRadius: '6px',
+                            overflowX: 'auto',
+                            whiteSpace: 'pre-wrap',
+                            wordBreak: 'break-word',
+                            fontSize: '12px',
+                            lineHeight: 1.5,
+                            marginTop: '8px',
+                            border: '1px solid #e1e4e8',
+                            maxHeight: '200px',
+                            overflowY: 'auto'
+                          }}>
                             {JSON.stringify(JSON.parse(bodyValue), null, 2)}
                           </pre>
-                        </>
+                        </div>
                       )}
                       <button
                         style={{
-                          marginTop: '10px',
+                          marginTop: '12px',
                           padding: '6px 12px',
-                          backgroundColor: '#ff5f5f',
-                          color: '#fff',
-                          border: 'none',
-                          borderRadius: '4px',
+                          backgroundColor: '#fafbfc',
+                          color: '#d73a49',
+                          border: '1px solid #d73a49',
+                          borderRadius: '6px',
                           cursor: 'pointer',
+                          fontSize: '13px',
+                          fontWeight: 500,
+                          transition: 'all 0.2s ease'
                         }}
                         onClick={() => handleRemove(api, method)}
+                        onMouseEnter={(e) => {
+                          e.target.style.backgroundColor = '#d73a49';
+                          e.target.style.color = 'white';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.target.style.backgroundColor = '#fafbfc';
+                          e.target.style.color = '#d73a49';
+                        }}
                       >
                         Remove
                       </button>
@@ -249,25 +339,40 @@ const ListSelectedApis = () => {
             )}
           </div>
   
-          <div
-            style={{
-              padding: '12px',
-              borderTop: '1px solid #ddd',
-              textAlign: 'center',
-              backgroundColor: '#f9f9f9',
-            }}
-          >
+          <div style={{
+            padding: '16px',
+            borderTop: '1px solid #eaecef',
+            textAlign: 'center',
+            backgroundColor: '#f6f8fa'
+          }}>
             <button
               style={{
                 padding: '10px 20px',
-                backgroundColor: '#007bff',
-                color: '#fff',
+                backgroundColor: '#2ea44f',
+                color: '#ffffff',
                 border: 'none',
                 borderRadius: '6px',
-                fontSize: '16px',
+                fontSize: '14px',
+                fontWeight: 600,
                 cursor: 'pointer',
+                transition: 'background-color 0.2s ease',
+                boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
               }}
               onClick={() => setModalOpen(true)}
+              onMouseEnter={(e) => {
+                e.target.style.backgroundColor = '#2c974b';
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.backgroundColor = '#2ea44f';
+              }}
+              onMouseDown={(e) => {
+                e.target.style.backgroundColor = '#298e46';
+                e.target.style.boxShadow = 'inset 0 1px 3px rgba(0, 0, 0, 0.1)';
+              }}
+              onMouseUp={(e) => {
+                e.target.style.backgroundColor = '#2c974b';
+                e.target.style.boxShadow = '0 1px 3px rgba(0, 0, 0, 0.1)';
+              }}
             >
               Add APIs to Test
             </button>
@@ -276,7 +381,6 @@ const ListSelectedApis = () => {
       )}
     </div>
   );
-  
 };
 
 export default ListSelectedApis;
