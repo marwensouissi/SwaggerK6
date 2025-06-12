@@ -299,6 +299,7 @@ const ListSelectedApis = () => {
                             fontSize: '12px',
                             lineHeight: 1.5,
                             marginTop: '8px',
+                            color:'rgb(46, 164, 79)',
                             border: '1px solid #e1e4e8',
                             maxHeight: '200px',
                             overflowY: 'auto'

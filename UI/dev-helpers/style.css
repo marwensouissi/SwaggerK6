@@ -8,11 +8,13 @@ html
 *:after
 {
   box-sizing: inherit;
+  color: aliceblue;
 }
 
 body
 {
   margin:0;
-  background: #fafafa;
+  background: linear-gradient(145deg, #2d3748, #1a202c);
   overflow: hidden;
+  
 }

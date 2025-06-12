@@ -3,6 +3,15 @@ import PropTypes from "prop-types"
 import SwaggerUpload from "../components/SwaggerUpload"
 import { checkIfSwaggerExists } from "../../services/swaggerService"
 
+// K6 predefined functions list
+const k6Functions = [
+  { name: "randomString(length)", description: "Generates a random string of the given length." },
+  { name: "randomInt(min, max)", description: "Generates a random integer between min and max." },
+  { name: "check(response, conditions)", description: "Validates response against conditions." },
+  { name: "sleep(seconds)", description: "Pauses execution for the given duration." },
+  { name: "group(name, function)", description: "Groups test logic together." },
+]
+
 class App extends React.Component {
   constructor(props) {
     super(props)
@@ -15,6 +24,7 @@ class App extends React.Component {
       username: "",
       password: "",
       error: null,
+      showK6Functions: false,
     }
   }
 
@@ -180,11 +190,7 @@ class App extends React.Component {
                   color: "#fff",
                   fontSize: "14px",
                   outline: "none",
-                  transition: "border 0.2s",
-                  boxSizing: "border-box",
-                  ":focus": {
-                    borderColor: "rgba(255, 255, 255, 0.3)"
-                  }
+                  boxSizing: "border-box"
                 }}
               />
             </div>
@@ -213,11 +219,7 @@ class App extends React.Component {
                   color: "#fff",
                   fontSize: "14px",
                   outline: "none",
-                  transition: "border 0.2s",
-                  boxSizing: "border-box",
-                  ":focus": {
-                    borderColor: "rgba(255, 255, 255, 0.3)"
-                  }
+                  boxSizing: "border-box"
                 }}
               />
             </div>
@@ -233,11 +235,7 @@ class App extends React.Component {
                 borderRadius: "8px",
                 fontSize: "16px",
                 fontWeight: "600",
-                cursor: "pointer",
-                transition: "background-color 0.2s",
-                ":hover": {
-                  backgroundColor: "#2C6BEF"
-                }
+                cursor: "pointer"
               }}
             >
               Sign In
@@ -256,6 +254,7 @@ class App extends React.Component {
       </div>
     )
   }
+
   getLayout() {
     const { getComponent, layoutSelectors } = this.props
     const layoutName = layoutSelectors.current()
@@ -264,13 +263,12 @@ class App extends React.Component {
   }
 
   render() {
-    const { isSwaggerChecked, isSwaggerReady, isLoggedIn } = this.state
+    const { isSwaggerChecked, isSwaggerReady, isLoggedIn, showK6Functions } = this.state
 
     if (!isSwaggerChecked) return null
 
     if (!isSwaggerReady) {
       return <SwaggerUpload onSuccess={() => window.location.reload()} />
-
     }
 
     if (!isLoggedIn) {
@@ -278,8 +276,57 @@ class App extends React.Component {
     }
 
     const Layout = this.getLayout()
+
     return (
       <div>
+        {/* K6 Functions Toggle Button */}
+        <button
+          onClick={() => this.setState({ showK6Functions: !showK6Functions })}
+          style={{
+            position: "fixed",
+            top: "10px",
+            right: "96px",
+            zIndex: 1000,
+            padding: "10px 24px",
+            borderRadius: "6px",
+            backgroundColor: "#62a03f",
+            color: "#fff",
+            border: "none",
+            cursor: "pointer"
+          }}
+        >
+          K6 Functions
+        </button>
+
+        {/* K6 Function List Display */}
+        {showK6Functions && (
+          <div style={{
+            position: "fixed",
+            top: "50px",
+            right: "140px",
+            zIndex: 999,
+            width: "300px",
+            backgroundColor: "#fff",
+            border: "1px solid #ccc",
+            borderRadius: "8px",
+            padding: "16px",
+            boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
+            fontSize: "14px",
+            color: "#333"
+          }}>
+            <h4 style={{ margin: "0 0 10px" }}>K6 Utility Functions</h4>
+            <ul style={{ paddingLeft: "20px", margin: 0 }}>
+              {k6Functions.map((fn, idx) => (
+                <li key={idx} style={{ marginBottom: "8px" }}>
+                  <strong>{fn.name}</strong><br />
+                  <span style={{ fontSize: "12px", color: "#666" }}>{fn.description}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* Logout Button */}
         <button
           onClick={() => {
             sessionStorage.removeItem("authToken")
@@ -301,6 +348,7 @@ class App extends React.Component {
         >
           Logout
         </button>
+
         <Layout />
       </div>
     )
