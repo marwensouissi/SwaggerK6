@@ -48,6 +48,7 @@ $color-primary-hover: color.adjust($color-primary, $lightness: 0.5%) !default;
 $color-post: #4caf50 !default;  // Vibrant green
 $color-get: #2196f3 !default;   // Bright blue
 $color-put: #ff9800 !default;   // Orange
+$color-mqtt: #897e06 !default;   // Orange
 $color-delete: #f44336 !default; // Red
 $color-head: #9c27b0 !default;  // Purple
 $color-patch: #00bcd4 !default; // Cyan
@@ -135,7 +136,7 @@ $opblock-isopen-section-header-background-color: $white !default;
 $opblock-isopen-section-header-box-shadow-color: $black !default;
 
 $opblock-summary-method-background-color: $black !default;
-$opblock-summary-method-font-color: $white !default;
+$opblock-summary-method-font-color: $white;
 $opblock-summary-method-text-shadow-color: $black !default;
 
 $operational-filter-input-border-color: $geyser-blue !default;

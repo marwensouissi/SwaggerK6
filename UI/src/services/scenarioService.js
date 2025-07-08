@@ -1,4 +1,4 @@
-const API_BASE_URL = 'http://localhost:6060/api/scenarios';
+const API_BASE_URL = 'http://localhost:6060/scenarios';
 
 export async function createScenario(rawJson) {
   try {

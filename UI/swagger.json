@@ -22365,6 +22365,192 @@
         ]
       }
     },
+"/api/custmer/{customerId}/devices/types{?excludeTypes,page,pageSize,sortOrder,sortProperty,textSearch}": {
+      "mqtt": {
+        "tags": ["device-controller"],
+        "summary": "Get Customer Devices (getCustomerDevices)",
+        "description": "Returns a page of devices objects assigned to customer. You can specify parameters to filter the results. The result is wrapped with PageData object that allows you to iterate over result set using pagination. See the 'Model' tab of the Response Class for more details. \n\nAvailable for users with 'TENANT_ADMIN' or 'CUSTOMER_USER' authority.",
+        "operationId": "getCustomerDevicesByTypesUsingGET",
+        "parameters": [
+          {
+            "name": "customerId",
+            "in": "path",
+            "description": "A string value representing the customer id. For example, '784f394c-42b6-435a-983c-b7beff2784f9'",
+            "required": true,
+            "style": "simple",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "description": "Maximum amount of entities in a one page",
+            "required": true,
+            "style": "form",
+            "allowReserved": true,
+            "schema": { "type": "integer", "format": "int32" }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Sequence number of page starting from 0",
+            "required": true,
+            "style": "form",
+            "allowReserved": true,
+            "schema": { "type": "integer", "format": "int32" }
+          },
+          {
+            "name": "excludeTypes",
+            "in": "query",
+            "description": "Device type as the name of the device profile",
+            "required": true,
+            "style": "form",
+            "explode": true,
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "textSearch",
+            "in": "query",
+            "description": "The case insensitive 'substring' filter based on the device name.",
+            "required": false,
+            "style": "form",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "sortProperty",
+            "in": "query",
+            "description": "Property of entity to sort by",
+            "required": false,
+            "style": "form",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "createdTime",
+                "customerTitle",
+                "deviceProfileName",
+                "label",
+                "name"
+              ]
+            }
+          },
+          {
+            "name": "sortOrder",
+            "in": "query",
+            "description": "Sort order. ASC (ASCENDING) or DESC (DESCENDING)",
+            "required": false,
+            "style": "form",
+            "schema": { "type": "string", "enum": ["ASC", "DESC"] }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/PageData«Device»" }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ItonaErrorResponse" },
+                "examples": {
+                  "error-code-400": {
+                    "summary": "Bad Request",
+                    "value": {
+                      "status": 400,
+                      "message": "Invalid UUID string: 123",
+                      "errorCode": 31,
+                      "timestamp": "2025-05-09T16:12:57.803+00:00"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ItonaErrorResponse" },
+                "examples": {
+                  "error-code-401": {
+                    "summary": "Unauthorized",
+                    "value": {
+                      "status": 401,
+                      "message": "Authentication failed",
+                      "errorCode": 10,
+                      "timestamp": "2025-05-09T16:12:57.840+00:00"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ItonaErrorResponse" },
+                "examples": {
+                  "error-code-403": {
+                    "summary": "Forbidden",
+                    "value": {
+                      "status": 403,
+                      "message": "You don't have permission to perform this operation!",
+                      "errorCode": 20,
+                      "timestamp": "2025-05-09T16:12:57.840+00:00"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ItonaErrorResponse" },
+                "examples": {
+                  "error-code-404": {
+                    "summary": "Not Found",
+                    "value": {
+                      "status": 404,
+                      "message": "Requested item wasn't found!",
+                      "errorCode": 32,
+                      "timestamp": "2025-05-09T16:12:57.840+00:00"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ItonaErrorResponse" },
+                "examples": {
+                  "error-code-429": {
+                    "summary": "Too Many Requests",
+                    "value": {
+                      "status": 429,
+                      "message": "Too many requests for current tenant!",
+                      "errorCode": 33,
+                      "timestamp": "2025-05-09T16:12:57.840+00:00"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          { "HTTP login form": ["SYS_ADMIN", "TENANT_ADMIN", "CUSTOMER_USER"] }
+        ]
+      }
+    },
     "/api/customer/{customerId}/devices{?page,pageSize,sortOrder,sortProperty,textSearch,type}": {
       "get": {
         "tags": ["device-controller"],

@@ -1,30 +1,42 @@
-/* eslint-disable no-undef */
+// In your main initialization file (likely index.js or similar)
 window.onload = function() {
-  window["SwaggerUIBundle"] = window["swagger-ui-bundle"]
-  window["SwaggerUIStandalonePreset"] = window["swagger-ui-standalone-preset"]
-  // Build a system
-  const ui = SwaggerUIBundle({
-    url: "./swagger.json",
-    dom_id: '#swagger-ui',
-    deepLinking: true,
-    presets: [
-      SwaggerUIBundle.presets.apis,
-      SwaggerUIStandalonePreset
-    ],
-    layout: "StandaloneLayout"
-  })
+  window.SwaggerUIBundle = window['swagger-ui-bundle']
+  window.SwaggerUIStandalonePreset = window['swagger-ui-standalone-preset']
+  
+  // Store all specs and UI instances
+  window.specRegistry = {
+    currentUI: null,
+    specs: {},
+    containers: {}
+  }
 
-  window.ui = ui
+  // Function to load or switch specs
+  window.loadSwaggerSpec = function(specKey, specUrl) {
+    // Destroy previous instance if exists
+    if (window.specRegistry.containers[specKey]) {
+      window.specRegistry.containers[specKey].unmount()
+    }
+    
+    // Create new instance
+    const ui = SwaggerUIBundle({
+      url: specUrl,
+      dom_id: '#swagger-ui',
+      deepLinking: true,
+      presets: [
+        SwaggerUIBundle.presets.apis,
+        SwaggerUIStandalonePreset
+      ],
+      layout: "StandaloneLayout"
+    })
+    
+    // Store reference
+    window.specRegistry.currentUI = ui
+    window.specRegistry.containers[specKey] = ui
+    window.specRegistry.specs[specKey] = specUrl
+    
+    return ui
+  }
 
-  ui.initOAuth({
-    clientId: "your-client-id",
-    clientSecret: "your-client-secret-if-required",
-    realm: "your-realms",
-    appName: "your-app-name",
-    scopeSeparator: " ",
-    scopes: "openid profile email phone address",
-    additionalQueryStringParams: {},
-    useBasicAuthenticationWithAccessCodeGrant: false,
-    usePkceWithAuthorizationCodeGrant: false
-  })
+  // Load default spec
+  window.loadSwaggerSpec('default', './swagger.json')
 }

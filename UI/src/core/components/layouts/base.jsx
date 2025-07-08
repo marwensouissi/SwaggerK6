@@ -4,6 +4,7 @@
 import React from "react"
 import PropTypes from "prop-types"
 import ListSelectedApis from "../list-selected-apis"
+import { Warning } from "postcss"
 
 export default class BaseLayout extends React.Component {
   static propTypes = {
@@ -56,8 +57,8 @@ export default class BaseLayout extends React.Component {
       loadingMessage = (
         <div className="info">
           <div className="loading-container">
-            <h4 className="title">Failed to load API definition.</h4>
-            <Errors />
+            <h4 className="title">Please upload a Swagger JSON file to continue.
+</h4>
           </div>
         </div>
       )
@@ -95,6 +96,8 @@ export default class BaseLayout extends React.Component {
     const hasSchemes = schemes && schemes.size
     const hasSecurityDefinitions = !!specSelectors.securityDefinitions()
 
+    const swaggerFilename = specSelectors.url()?.split('/').pop() || null;
+
     return (
       <div className="swagger-ui">
         <SvgAssets />
@@ -110,19 +113,7 @@ export default class BaseLayout extends React.Component {
             </Col>
           </Row> */}
 
-          {hasServers || hasSchemes || hasSecurityDefinitions ? (
-            <div className="scheme-container">
-              <Col className="schemes wrapper" mobile={12}>
-                {hasServers || hasSchemes ? (
-                  <div className="schemes-server-container">
-                    {hasServers ? <ServersContainer /> : null}
-                    {hasSchemes ? <SchemesContainer /> : null}
-                  </div>
-                ) : null}
-                {hasSecurityDefinitions ? <AuthorizeBtnContainer /> : null}
-              </Col>
-            </div>
-          ) : null}
+      
 
           <FilterContainer />
 
@@ -131,7 +122,7 @@ export default class BaseLayout extends React.Component {
               mobile={12}
               desktop={12}
               style={{
-                height: "calc(100vh - 189px)",
+                height: "calc(100vh - 100px)",
                 overflowY: "auto",
                 paddingInlineEnd: '16px',  
               }}
@@ -139,7 +130,7 @@ export default class BaseLayout extends React.Component {
               <Operations />
             </Col>
 
-            <ListSelectedApis />
+            <ListSelectedApis swaggerFilename={swaggerFilename} />
           </Row>
 
           {isOAS31 && (

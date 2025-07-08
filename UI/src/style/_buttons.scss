@@ -15,7 +15,7 @@
   background: transparent;
   box-shadow: 0 1px 2px rgba($btn-box-shadow-color, 0.1);
 
-  @include type.text_headline();
+  color: #7d8293;
 
   &.btn-sm {
     font-size: 12px;
@@ -67,7 +67,7 @@
 
 .btn-group {
   display: flex;
-
+ 
   padding: 30px;
 
   .btn {
@@ -140,9 +140,20 @@
     fill: $expand-methods-svg-fill-color;
   }
 }
-
+.close-btn{
+    color: #ffffff;
+    cursor: pointer;
+    position: absolute;
+    z-index: 1;
+    right: auto;
+    margin: 7px;
+    border-radius: 10px;
+    border: none;
+    background: brown;
+}
 button {
   cursor: pointer;
+  color: black;
 
   &.invalid {
     @include mixins.invalidFormElement();

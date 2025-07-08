@@ -107,6 +107,7 @@
           width: auto;
 
           &:after {
+            color: #666;
             content: ":\00a0";
           }
         }
@@ -200,7 +201,7 @@ section.models {
     cursor: pointer;
     transition: all 0.2s;
 
-    @include type.text_headline($section-models-h4-font-color);
+    color: aliceblue;
 
     svg {
       transition: all 0.4s;

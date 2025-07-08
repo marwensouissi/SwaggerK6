@@ -6,7 +6,6 @@ import ImPropTypes from "react-immutable-proptypes"
 import DebounceInput from "react-debounce-input"
 import { stringify, isImmutable, immutableToJS } from "core/utils"
 
-/* eslint-disable  react/jsx-no-bind */
 
 const noop = ()=> {}
 const JsonSchemaPropShape = {

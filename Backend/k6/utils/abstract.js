@@ -9,7 +9,6 @@ function handleRequest(method, metadata, body = null) {
     if (metadata.token) {
         headers['Authorization'] = `Bearer ${metadata.token}`;
     }
-    console.log("headers : ", headers);
 
     const params = {
         headers: headers,
@@ -18,16 +17,13 @@ function handleRequest(method, metadata, body = null) {
             job: metadata.job,
         },
     };
-    console.log("params : ", params);
-
 
     let response;
     if (method === 'del') {
-        response = http.request('DELETE', metadata.url, null, params);  
+        response = http.request('DELETE', metadata.url, null, params);
     } else {
         response = body ? http[method](metadata.url, JSON.stringify(body), params) : http[method](metadata.url, params);
     }
-
 
     // Validate response status
     const success = check(response, {
@@ -49,31 +45,27 @@ function handleRequest(method, metadata, body = null) {
     }
 }
 
-// GET request with payload (includes query parameters or authentication)
+// Abstracted request methods
 export function get_abstract_with_payload(metadata) {
     return handleRequest('get', metadata);
 }
 
-// GET request without payload (simple GET request)
 export function get_abstract_without_payload(metadata) {
     return handleRequest('get', metadata);
 }
 
-// POST request with payload
 export function post_abstract_with_payload(metadata) {
     return handleRequest('post', metadata, metadata.payload);
 }
 
-// PATCH request with payload
 export function patch_abstract_with_payload(metadata) {
     return handleRequest('patch', metadata, metadata.payload);
 }
 
-// DELETE request without payload
 export function delete_abstract_without_payload(metadata) {
     return handleRequest('del', metadata);
 }
 
 export function put_abstract_with_payload(metadata) {
-    return handleRequest('put', metadata);
+    return handleRequest('put', metadata, metadata.payload);
 }

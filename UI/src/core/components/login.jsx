@@ -8,7 +8,7 @@ const LoginPage = () => {
 
   const handleLogin = async () => {
     try {
-      const res = await fetch('http://localhost:6060/api/auth/login', {
+      const res = await fetch('http://localhost:6060/users/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -13,13 +13,16 @@ const Servers = ({
   setServerVariableValue,
   getServerVariable,
   getEffectiveServerValue,
+  specSelectors,
+
 }) => {
   const currentServerDefinition =
     servers.find((s) => s.get("url") === currentServer) || OrderedMap()
   const currentServerVariableDefs =
     currentServerDefinition.get("variables") || OrderedMap()
   const shouldShowVariableUI = currentServerVariableDefs.size !== 0
-
+  const info = specSelectors.info(); // get info object
+  const title = info && info.get("title"); // e.g., "Itona REST API"
   useEffect(() => {
     if (currentServer) return
 
@@ -72,7 +75,7 @@ const Servers = ({
   return (
     <div className="servers">
       <label htmlFor="servers">
-        <select
+       <select
           onChange={handleServerChange}
           value={currentServer}
           id="servers"
@@ -81,13 +84,12 @@ const Servers = ({
             .valueSeq()
             .map((server) => (
               <option value={server.get("url")} key={server.get("url")}>
-                {server.get("url")}
-                {server.get("description") && ` - ${server.get("description")}`}
+                {title || server.get("url")}
               </option>
             ))
             .toArray()}
-        </select>
-      </label>
+  </select>
+</label>
       {shouldShowVariableUI && (
         <div>
           <div className={"computed-url"}>

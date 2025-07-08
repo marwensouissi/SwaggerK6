@@ -58,6 +58,7 @@ const defaultOptions = Object.freeze({
     "put",
     "post",
     "delete",
+    "mqtt",
     "options",
     "head",
     "patch",

@@ -301,6 +301,7 @@ export const validOperationMethods = constant([
   "put",
   "post",
   "delete",
+  "mqtt",
   "options",
   "head",
   "patch",

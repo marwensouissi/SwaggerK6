@@ -1,8 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { FaCloud, FaServer, FaArrowLeft, FaChartLine, FaExternalLinkAlt } from 'react-icons/fa';
+import { FaCloud, FaServer, FaArrowLeft, FaChartLine, FaFileExport } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
-const ChooseExecutionOption = ({ onSelectOption, filename, onBack }) => {
+import Cloud from './Cloud';
+import CloudClusterForm from './CloudClusterForm';
 
+const ChooseExecutionOption = ({  filename, onBack }) => {
   const [hoveredOption, setHoveredOption] = useState(null);
   const [running, setRunning] = useState(false);
   const [logs, setLogs] = useState('');
@@ -13,15 +15,69 @@ const ChooseExecutionOption = ({ onSelectOption, filename, onBack }) => {
   const [dashboardAvailable, setDashboardAvailable] = useState(false);
   const logContainerRef = useRef(null);
   const [dashboardPort, setDashboardPort] = useState(null);
+  const [keyInput, setKeyInput] = useState('');
+  const [extractedValues, setExtractedValues] = useState([]);
 
+  const [showPopup, setShowPopup] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [selectedOption, setSelectedOption] = useState(null);
 
-
+  // Auto-scroll logs
   useEffect(() => {
     if (logContainerRef.current) {
       logContainerRef.current.scrollTop = logContainerRef.current.scrollHeight;
     }
   }, [logs]);
+  const handleExtractValues = async () => {
+    if (!keyInput) {
+      alert('Please enter a key to search.');
+      return;
+    }
+  
+    try {
+      const response = await fetch(`http://localhost:6060/mqtt/extract?key=${encodeURIComponent(keyInput)}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'text/plain',
+          'Authorization': `Bearer ${sessionStorage.getItem('authToken')}`,
+        },
+        body: logs,
+      });
+  
+      if (!response.ok) {
+        throw new Error(`Server error: ${response.statusText}`);
+      }
+  
+      const result = await response.json();
+      const values = result[keyInput] || [];
+  
+    
+      setExtractedValues(values);
+      setShowPopup(true);
+    } catch (error) {
+      console.error('Extraction error:', error);
+      alert('Error extracting values. Check console for details.');
+    }
+  };
+  
+//copy payload 
+const handleCopyAll = () => {
+  if (!extractedValues || extractedValues.length === 0) return;
 
+  const formatted = extractedValues
+    .map((key, idx) => `"${key}"${idx === extractedValues.length - 1 ? '' : ','}`)
+    .join('\n');
+
+  navigator.clipboard.writeText(formatted).then(() => {
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  });
+};
+
+
+  
+  
+  // Rest of your component code remains the same...
   const openDashboard = () => {
     if (dashboardPort) {
       window.open(`http://localhost:${dashboardPort}`, '_blank');
@@ -46,39 +102,35 @@ const ChooseExecutionOption = ({ onSelectOption, filename, onBack }) => {
 
     try {
       const token = sessionStorage.getItem("authToken");
-      const url = `http://localhost:6060/api/api/k6/run/stream/${filename}?token=${token}`;
+      const url = `http://localhost:6060/execution/run/stream/${filename}`;
 
-      const eventSource = new EventSource(url);
+      const eventSource = new EventSource(url, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
       eventSource.onmessage = (e) => {
         setLogs((prev) => prev + e.data + '\n');
-      
+
         if (e.data.startsWith("DASHBOARD_PORT:")) {
           const port = e.data.split(":")[1];
           setDashboardPort(port);
-          setDashboardAvailable(true); // you can trigger this when you get the port
-        }
-      
-        if (
-          e.data.toLowerCase().includes('web dashboard') ||
-          e.data.includes('dashboard available')
-        ) {
           setDashboardAvailable(true);
         }
-      
-        if (
-          e.data.includes('test finished with exit code') ||
-          e.data.includes('test completed') ||
-          e.data.includes('execution complete')
-        ) {
+
+        if (e.data.toLowerCase().includes('web dashboard') || e.data.includes('dashboard available')) {
+          setDashboardAvailable(true);
+        }
+
+        if (e.data.includes('test finished with exit code') || e.data.includes('test completed') || e.data.includes('execution complete')) {
           setTestCompleted(true);
           setRunning(false);
         }
       };
-      
 
       eventSource.onopen = () => {
         console.log("SSE connection opened");
-        // Dashboard should be available shortly after test starts
         setTimeout(() => setDashboardAvailable(true), 2000);
       };
 
@@ -116,8 +168,6 @@ const ChooseExecutionOption = ({ onSelectOption, filename, onBack }) => {
     setTestCompleted(false);
     setShowResults(false);
     setDashboardAvailable(false);
-
-  
   };
 
   const handleBackToOptions = () => {
@@ -125,7 +175,7 @@ const ChooseExecutionOption = ({ onSelectOption, filename, onBack }) => {
       window._k6EventSource.close();
       window._k6EventSource = null;
     }
-  
+
     setRunning(false);
     setLogs('');
     setError(null);
@@ -133,15 +183,18 @@ const ChooseExecutionOption = ({ onSelectOption, filename, onBack }) => {
     setTestCompleted(false);
     setShowResults(false);
     setDashboardAvailable(false);
-  
-    // Notify parent to go back or close modal
+
     if (onBack) {
       onBack();
     }
   };
-  
+
+  if (selectedOption === 'cloud') {
+    return <CloudClusterForm onBack={() => setSelectedOption(null)} />;
+  }
 
   return (
+    
     <motion.div 
       className="modal-overlay"
       initial={{ opacity: 0 }}
@@ -162,7 +215,7 @@ const ChooseExecutionOption = ({ onSelectOption, filename, onBack }) => {
             <div className="option-buttons">
               <motion.button 
                 onClick={runLocalTest}
-                className={`launch-btn ${hoveredOption === 'local' ? 'btn-hovered' : ''}`}
+                className={`launch-btn local ${hoveredOption === 'local' ? 'btn-hovered' : ''}`}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.98 }}
                 onMouseEnter={() => setHoveredOption('local')}
@@ -189,7 +242,7 @@ const ChooseExecutionOption = ({ onSelectOption, filename, onBack }) => {
               </motion.button>
 
               <motion.button 
-                onClick={() => onSelectOption("k6-operator")} 
+                onClick={() => setSelectedOption('cloud')}
                 className={`launch-btn cloud ${hoveredOption === 'cloud' ? 'btn-hovered' : ''}`}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.98 }}
@@ -216,16 +269,15 @@ const ChooseExecutionOption = ({ onSelectOption, filename, onBack }) => {
             </div>
 
             <div className="modal-actions">
-            <motion.button 
-  className="cancel-btn"
-  onClick={handleBackToOptions}
-  whileHover={{ x: -3 }}
-  whileTap={{ scale: 0.95 }}
->
-  <FaArrowLeft style={{ marginRight: '8px' }} />
-  Back
-</motion.button>
-
+              <motion.button 
+                className="cancel-btn"
+                onClick={handleBackToOptions}
+                whileHover={{ x: -3 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <FaArrowLeft style={{ marginRight: '8px' }} />
+                Back
+              </motion.button>
             </div>
 
             {!filename && (
@@ -237,25 +289,50 @@ const ChooseExecutionOption = ({ onSelectOption, filename, onBack }) => {
         ) : (
           <>
             <div className="test-header">
-            <h2 className="modal-title" style={{ color: 'white' }}>
+              <h2 className="modal-title" style={{ color: 'white' }}>
                 {running ? 'Running Test: ' : 'Test Results: '}{filename}
                 {testCompleted && <span style={{ color: '#84BD00', marginLeft: '10px' }}>[COMPLETED]</span>}
                 {running && <span style={{ color: '#f39c12', marginLeft: '10px' }}>[RUNNING...]</span>}
               </h2>
+
+              <input
+                value={keyInput}
+                onChange={(e) => setKeyInput(e.target.value)}
+                type='text'
+                style={{
+                  width: "17%",
+                  padding: "10px 12px",
+                  borderRadius: "6px",
+                  border: "1px solid #4a5568",
+                  background: "#2d3748",
+                  color: "#f7fafc",
+                  fontSize: "14px",
+                }}
+                placeholder="Enter key to extract"
+              />
               
-              {(running || dashboardAvailable) && (
+              <motion.button
+                className="dashboard-btn"
+                onClick={handleExtractValues}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.5 }}
+              >
+                Extract
+                <FaFileExport style={{ marginLeft: '8px', fontSize: '12px' }} />
+              </motion.button>
+
+              {dashboardAvailable && (
                 <motion.button
                   className="dashboard-btn"
                   onClick={openDashboard}
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.5 }}
                 >
-                  <FaChartLine style={{ marginRight: '8px' }} />
                   Open Dashboard
-                  <FaExternalLinkAlt style={{ marginLeft: '8px', fontSize: '12px' }} />
+                  <FaChartLine style={{ marginLeft: '8px', fontSize: '12px' }} />
                 </motion.button>
               )}
             </div>
@@ -266,7 +343,101 @@ const ChooseExecutionOption = ({ onSelectOption, filename, onBack }) => {
             >
               {logs || "Waiting for output..."}
             </pre>
-      
+
+            {extractedValues.length > 0 && (
+              <div style={{
+                margin: '1rem 0',
+                padding: '1rem',
+                background: '#1a1a1a',
+                borderRadius: '8px',
+                border: '1px solid #333'
+              }}>
+                <h4 style={{ margin: '0 0 0.5rem 0', color: '#4CAF50' }}>
+                  Extracted Values for "{keyInput}"
+                </h4>
+                {extractedValues.map((value, i) => (
+                  <pre key={i} style={{
+                    margin: '0.5rem 0',
+                    padding: '0.75rem',
+                    background: '#222',
+                    borderRadius: '6px',
+                    border: '1px solid #444',
+                    color: '#f0f0f0',
+                    whiteSpace: 'pre-wrap',
+                    overflowX: 'auto'
+                  }}>
+                    {value}
+                  </pre>
+                ))}
+
+
+              </div>
+            )}
+            {showPopup && (
+  <motion.div
+    initial={{ scale: 0.9, opacity: 0 }}
+    animate={{ scale: 1, opacity: 1 }}
+    exit={{ scale: 0.9, opacity: 0 }}
+    transition={{ duration: 0.2 }}
+    style={{
+      background: '#1a1a1a',
+      border: '1px solid #444',
+      borderRadius: '8px',
+      padding: '1.5rem',
+      marginTop: '1.5rem',
+      boxShadow: '0 0 20px rgba(0,0,0,0.3)',
+      color: '#f0f0f0'
+    }}
+  >
+    <h4 style={{ marginBottom: '1rem', color: '#84BD00' }}>
+      Extracted values for "<span style={{ color: '#FFD700' }}>{keyInput}</span>"
+    </h4>
+
+    <pre style={{
+      background: '#111',
+      padding: '1rem',
+      borderRadius: '6px',
+      maxHeight: '200px',
+      overflowY: 'auto',
+      whiteSpace: 'pre-wrap',
+      fontSize: '0.9rem'
+    }}>
+      {extractedValues.join('\n')}
+    </pre>
+
+    <div style={{ marginTop: '1rem', display: 'flex', gap: '1rem' }}>
+      <button
+        onClick={handleCopyAll}
+        style={{
+          background: '#4CAF50',
+          color: 'white',
+          border: 'none',
+          padding: '0.5rem 1rem',
+          borderRadius: '6px',
+          cursor: 'pointer',
+        }}
+      >
+        {copied ? 'Copied!' : 'Copy All'}
+      </button>
+
+      <button
+        onClick={() => setShowPopup(false)}
+        style={{
+          background: '#e53e3e',
+          color: 'white',
+          border: 'none',
+          padding: '0.5rem 1rem',
+          borderRadius: '6px',
+          cursor: 'pointer',
+        }}
+      >
+        Close
+      </button>
+    </div>
+  </motion.div>
+)}
+
+
             <div className="modal-actions">
               {testCompleted ? (
                 <>
@@ -320,17 +491,16 @@ const ChooseExecutionOption = ({ onSelectOption, filename, onBack }) => {
         }
         
         .modal-content {
-          background: linear-gradient(145deg, #2d3748, #1a202c);
-          border-radius: 12px;
-          padding: 2rem;
-          width: 90%;
-          max-width: 600px;
-          max-height: 90vh;
-          box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
-          color: white;
-          border: 1px solid #4a5568;
-          overflow: hidden;
-        }
+  background: linear-gradient(145deg, #2d3748, #1a202c);
+  border-radius: 12px;
+  padding: 2rem;
+  width: 85%;
+  max-height: 90vh;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+  color: white;
+  border: 1px solid #4a5568;
+  overflow-y: auto; /* Enable vertical scroll */
+}
         
         .test-header {
           display: flex;
@@ -353,7 +523,7 @@ const ChooseExecutionOption = ({ onSelectOption, filename, onBack }) => {
         .dashboard-btn {
           background: linear-gradient(135deg, #667eea, #764ba2);
           border: none;
-          color: white;
+          color: white !important;
           padding: 0.75rem 1.25rem;
           border-radius: 8px;
           cursor: pointer;
@@ -389,6 +559,8 @@ const ChooseExecutionOption = ({ onSelectOption, filename, onBack }) => {
           border-radius: 10px;
           padding: 1.5rem;
           color: white;
+          width: 60%;
+          margin: auto; 
           cursor: pointer;
           text-align: left;
           transition: all 0.3s ease;
@@ -397,7 +569,11 @@ const ChooseExecutionOption = ({ onSelectOption, filename, onBack }) => {
         }
         
         .launch-btn.cloud {
-          background: linear-gradient(135deg, #4299e1, #3182ce);
+          margin: auto;
+        }
+
+        .launch-btn.local {
+          margin: auto;
         }
         
         .launch-btn.btn-hovered {
@@ -413,6 +589,7 @@ const ChooseExecutionOption = ({ onSelectOption, filename, onBack }) => {
           display: flex;
           align-items: center;
           gap: 1rem;
+          margin: auto;
         }
         
         .btn-icon {
@@ -456,7 +633,7 @@ const ChooseExecutionOption = ({ onSelectOption, filename, onBack }) => {
         .cancel-btn, .action-btn {
           background: none;
           border: 1px solid #4a5568;
-          color: #a0aec0;
+          color:rgb(236, 239, 241) !important;
           padding: 0.5rem 1rem;
           border-radius: 6px;
           cursor: pointer;

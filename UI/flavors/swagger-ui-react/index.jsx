@@ -138,6 +138,7 @@ SwaggerUI.propTypes = {
       "put",
       "post",
       "delete",
+      "mqtt",
       "options",
       "head",
       "patch",

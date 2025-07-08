@@ -107,7 +107,7 @@ table {
   // TODO: refactor all of this to flexbox
   margin-right: 0.75em;
 
-  @include type.text_headline();
+  color: #999;
 
   &.required {
     font-weight: bold;
@@ -167,8 +167,9 @@ table {
 }
 
 .response-col_description {
+  color: #999;
   width: 99%; // forces other columns to shrink to their content widths
-
+  col
   .markdown,
   .renderedMarkdown {
     p {
