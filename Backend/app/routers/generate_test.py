@@ -153,33 +153,35 @@ def k6_archive(js_file_path: Path, output_dir: Path) -> Path:
     return renamed_tar, renamed_tar.parent
 
 
-def generate_configmap_yaml(name: str, namespace: str = "default") -> str:
+def generate_configmap_yaml(tar_file_path: Path, namespace: str = "default") -> str:
+    name = tar_file_path.stem
     return f"""
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {name}-configmap
+  name: {name}
   namespace: {namespace}
-data:
-  main.js: |
-    # k6 test will be loaded by initContainer from this ConfigMap
-    (will be mounted via tar)
+binaryData:
+  archive.tar: {tar_file_path.read_bytes().hex()}
 """.strip()
 
 
-def generate_testrun_yaml(name: str) -> str:
+def generate_testrun_yaml(name: str, namespace: str = "default") -> str:
     return f"""
 apiVersion: k6.io/v1alpha1
 kind: TestRun
 metadata:
   name: {name}
+  namespace: {namespace}
 spec:
   script:
-    configMap:
-      name: {name}-configmap
-      file: main.js
+    archive:
+      configMap:
+        name: {name}
+        file: archive.tar
   parallelism: 1
 """.strip()
+
 
 def git_push(path: Path, message: str):
     # Add all changes
@@ -205,19 +207,33 @@ def archive_and_push_test(
         if not js_file_path.exists():
             raise HTTPException(status_code=404, detail=f"Test file {filename} not found")
 
-        # 1. Archive the K6 script
+        # Prepare the cloud directory inside generated
+        cloud_dir = GENERATED_DIR / "cloud"
+        cloud_dir.mkdir(exist_ok=True)
+
+        # 1. Archive the K6 script (output will be in GENERATED_DIR)
         tar_path, archive_dir = k6_archive(js_file_path, GENERATED_DIR)
-        test_name = archive_dir.name
 
-        # 2. Generate Kubernetes YAMLs
-        (archive_dir / "configmap.yaml").write_text(generate_configmap_yaml(test_name))
-        (archive_dir / "testrun.yaml").write_text(generate_testrun_yaml(test_name))
+        test_name = tar_path.stem  # without extension
 
-        # 3. Copy archive to Bitbucket repo
+        # Create test-specific folder inside cloud
+        test_cloud_dir = cloud_dir / test_name
+        if test_cloud_dir.exists():
+            shutil.rmtree(test_cloud_dir)
+        test_cloud_dir.mkdir(parents=True, exist_ok=True)
+
+        # Move the .tar file inside cloud/test_name folder
+        shutil.move(str(tar_path), test_cloud_dir / tar_path.name)
+
+        # 2. Generate Kubernetes YAMLs inside cloud/test_name folder
+        (test_cloud_dir / "configmap.yaml").write_text(generate_configmap_yaml(test_cloud_dir / tar_path.name))
+        (test_cloud_dir / "testrun.yaml").write_text(generate_testrun_yaml(test_name))
+
+        # 3. Copy cloud/test_name folder to Bitbucket repo under k6-tests/test_name
         dest_dir = BITBUCKET_REPO_PATH / "k6-tests" / test_name
         if dest_dir.exists():
             shutil.rmtree(dest_dir)  # Ensure no conflict
-        shutil.copytree(archive_dir, dest_dir)
+        shutil.copytree(test_cloud_dir, dest_dir)
 
         # 4. Commit and push
         git_push(BITBUCKET_REPO_PATH, f"Add test {test_name}")
@@ -227,7 +243,6 @@ def archive_and_push_test(
     except Exception as e:
         logger.exception("Failed to archive and push test")
         raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
-
 
 # ROUTE: List available Swagger JSON files
 @router.get("/swagger-files", response_model=List[str])

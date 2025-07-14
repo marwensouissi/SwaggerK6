@@ -1,0 +1,12 @@
+apiVersion: k6.io/v1alpha1
+kind: TestRun
+metadata:
+  name: swagger_9f7465b0_test
+  namespace: default
+spec:
+  script:
+    archive:
+      configMap:
+        name: swagger_9f7465b0_test
+        file: archive.tar
+  parallelism: 1
