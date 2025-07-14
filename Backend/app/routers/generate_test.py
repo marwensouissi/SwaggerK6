@@ -22,7 +22,7 @@ router = APIRouter(prefix="/generate", tags=["generator"])
 logger = logging.getLogger(__name__)
 
 # Set your local Bitbucket repo path here
-BITBUCKET_REPO_PATH = Path("C:/Users/marwe/path/to/itona-k6")  # <-- Update this to your actual local clone path
+BITBUCKET_REPO_PATH =  Path(__file__).resolve().parent.parent.parent  # <-- Update this to your actual local clone path
 GENERATED_DIR = Path(__file__).resolve().parent.parent / "generated"
 # Helper functions
 
@@ -130,12 +130,28 @@ def generate_test_file(
 
 
 def k6_archive(js_file_path: Path, output_dir: Path) -> Path:
-    output_tar = output_dir / f"{js_file_path.stem}.tar"
-    cmd = ["k6", "archive", str(js_file_path), "--output", str(output_tar)]
-    result = subprocess.run(cmd, capture_output=True)
+    # Step 1: Run archive command (creates archive.tar)
+    cmd = ["k6", "archive", str(js_file_path)]
+    result = subprocess.run(cmd, cwd=output_dir, capture_output=True)
+
     if result.returncode != 0:
         raise RuntimeError(f"k6 archive failed: {result.stderr.decode()}")
-    return output_tar
+
+    # Step 2: Rename archive.tar to match test filename
+    default_tar = output_dir / "archive.tar"
+    if not default_tar.exists():
+        raise FileNotFoundError("Expected 'archive.tar' not found after k6 archive")
+
+    renamed_tar = output_dir / f"{js_file_path.stem}.tar"
+    
+    # 🧹 Clean up if target tar already exists
+    if renamed_tar.exists():
+        renamed_tar.unlink()  # or use renamed_tar.unlink(missing_ok=True) in Python 3.8+
+
+    default_tar.rename(renamed_tar)
+
+    return renamed_tar, renamed_tar.parent
+
 
 def generate_configmap_yaml(name: str, namespace: str = "default") -> str:
     return f"""
@@ -165,44 +181,53 @@ spec:
   parallelism: 1
 """.strip()
 
-
 def git_push(path: Path, message: str):
-    subprocess.run(["git", "add", "."], cwd=path)
-    subprocess.run(["git", "commit", "-m", message], cwd=path)
-    # Use HTTPS with app password for Bitbucket push
+    # Add all changes
+    subprocess.run(["git", "add", "."], cwd=path, check=True)
+
+    # Commit with message
+    subprocess.run(["git", "commit", "-m", message], cwd=path, check=True)
+
+    # Set remote with credentials (only needed once, or ensure it's already done)
     remote_url = "https://***REMOVED_API_KEY***4@bitbucket.org/ndammak/itona-k6.git"
-    subprocess.run(["git", "push", remote_url], cwd=path)
+    subprocess.run(["git", "remote", "set-url", "origin", remote_url], cwd=path, check=True)
+
+    # Push to origin (main or master depending on your branch)
+    subprocess.run(["git", "push", "origin", "main"], cwd=path, check=True)
+
 
 @router.post("/archive-and-push")
 def archive_and_push_test(
-    filename: str = Query(..., description="Generated test filename"),
-    current_user: User = Depends(get_current_user)
+    filename: str = Query(..., description="Generated test filename")
 ):
     try:
         js_file_path = GENERATED_DIR / filename
         if not js_file_path.exists():
             raise HTTPException(status_code=404, detail=f"Test file {filename} not found")
 
-        # 1. Archive
+        # 1. Archive the K6 script
         tar_path, archive_dir = k6_archive(js_file_path, GENERATED_DIR)
         test_name = archive_dir.name
 
-        # 2. Create YAMLs
+        # 2. Generate Kubernetes YAMLs
         (archive_dir / "configmap.yaml").write_text(generate_configmap_yaml(test_name))
         (archive_dir / "testrun.yaml").write_text(generate_testrun_yaml(test_name))
 
-        # 3. Copy to Git repo
+        # 3. Copy archive to Bitbucket repo
         dest_dir = BITBUCKET_REPO_PATH / "k6-tests" / test_name
-        dest_dir.parent.mkdir(parents=True, exist_ok=True)
+        if dest_dir.exists():
+            shutil.rmtree(dest_dir)  # Ensure no conflict
         shutil.copytree(archive_dir, dest_dir)
 
-        # 4. Git commit & push
-        git_push(BITBUCKET_REPO_PATH, f"Add test {test_name} by {current_user.email}")
+        # 4. Commit and push
+        git_push(BITBUCKET_REPO_PATH, f"Add test {test_name}")
 
         return {"status": "success", "pushed": True, "test_name": test_name}
+
     except Exception as e:
         logger.exception("Failed to archive and push test")
         raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+
 
 # ROUTE: List available Swagger JSON files
 @router.get("/swagger-files", response_model=List[str])
@@ -217,4 +242,4 @@ def get_k6_logs(testrun_name: str):
         logs = subprocess.check_output(["kubectl", "logs", f"job/{testrun_name}"], stderr=subprocess.STDOUT)
         return {"logs": logs.decode()}
     except subprocess.CalledProcessError as e:
-        raise HTTPException(status_code=500, detail=f"Failed to get logs: {e.output.decode()}")
+        raise HTTPException(status_code=500, detail=f"Failed to get logs: {e.output.decode()}") 

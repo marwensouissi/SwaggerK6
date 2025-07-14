@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: generated-configmap
+  namespace: default
+data:
+  main.js: |
+    # k6 test will be loaded by initContainer from this ConfigMap
+    (will be mounted via tar)
