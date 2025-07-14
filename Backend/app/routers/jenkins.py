@@ -49,24 +49,19 @@ async def run_k6_test_websocket(websocket: WebSocket):
     logger.info("WebSocket connection opened")
 
     try:
-        message = await websocket.receive_text()
-        data = json.loads(message)
-
+        data = json.loads(await websocket.receive_text())
         region = data.get("region", "nyc3")
         cluster_name = data.get("cluster_name", "my-k6-cluster")
         node_size = data.get("node_size", "s-2vcpu-4gb")
-
         logger.info(f"Received cluster params: {data}")
-
     except Exception as e:
-        logger.error(f"Invalid payload or WebSocket message: {e}")
+        logger.error(f"Invalid payload: {e}")
         await websocket.send_text("❌ Invalid cluster configuration payload.")
         await websocket.close()
         return
 
     session = requests.Session()
     auth = (USERNAME, API_TOKEN)
-
     build_url = f"{JENKINS_URL}{JENKINS_JOB_PATH}/buildWithParameters"
     params = {
         "token": TRIGGER_TOKEN,
@@ -77,19 +72,13 @@ async def run_k6_test_websocket(websocket: WebSocket):
 
     try:
         resp = session.post(build_url, params=params, auth=auth, allow_redirects=False)
+        if resp.status_code != 201:
+            raise Exception(f"Jenkins job trigger failed: {resp.status_code}")
+        queue_url = resp.headers.get("Location")
+        if not queue_url:
+            raise Exception("Missing queue location in Jenkins response.")
     except Exception as e:
-        await websocket.send_text(f"❌ Failed to contact Jenkins: {e}")
-        await websocket.close()
-        return
-
-    if resp.status_code != 201:
-        await websocket.send_text(f"❌ Jenkins job trigger failed: {resp.status_code}")
-        await websocket.close()
-        return
-
-    queue_url = resp.headers.get("Location")
-    if not queue_url:
-        await websocket.send_text("❌ Missing queue location in Jenkins response.")
+        await websocket.send_text(f"❌ {e}")
         await websocket.close()
         return
 
@@ -97,11 +86,9 @@ async def run_k6_test_websocket(websocket: WebSocket):
     for _ in range(15):
         try:
             q_resp = session.get(f"{queue_url}api/json", auth=auth)
-            if q_resp.status_code == 200:
-                q_data = q_resp.json()
-                if q_data.get("executable"):
-                    build_number = q_data["executable"]["number"]
-                    break
+            if q_resp.status_code == 200 and q_resp.json().get("executable"):
+                build_number = q_resp.json()["executable"]["number"]
+                break
         except Exception as e:
             logger.warning(f"Queue polling failed: {e}")
         await asyncio.sleep(1)
@@ -121,7 +108,6 @@ async def run_k6_test_websocket(websocket: WebSocket):
             if status not in ("RUNNING", "PENDING"):
                 await websocket.send_text(f"✅ Final Status: {status}")
                 if status == "SUCCESS":
-                    # ✅ Update memory cache after success
                     cluster_status_cache.update({
                         "cluster_exists": True,
                         "job_number": build_number,
@@ -129,10 +115,8 @@ async def run_k6_test_websocket(websocket: WebSocket):
                     })
                 break
             await asyncio.sleep(2)
-
     except WebSocketDisconnect:
         logger.info("WebSocket disconnected by client.")
-
     finally:
         await websocket.close()
         logger.info("WebSocket connection closed")

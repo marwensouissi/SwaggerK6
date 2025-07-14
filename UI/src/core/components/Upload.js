@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import { uploadSwaggerJson } from "../../services/swaggerService";
 
 const Upload = ({ onSuccess }) => {
   const [error, setError] = useState(null);
@@ -17,11 +16,9 @@ const Upload = ({ onSuccess }) => {
     }
 
     try {
-      // Prepare form data
       const formData = new FormData();
       formData.append("file", file);
 
-      // Send to backend API
       const response = await fetch("http://localhost:6060/swagger/upload-json", {
         method: "POST",
         body: formData,
@@ -32,24 +29,12 @@ const Upload = ({ onSuccess }) => {
         throw new Error(msg || "Failed to upload file");
       }
 
-      // Optionally, get the saved spec info from the response
       const data = await response.json();
-
-      // Call onSuccess with the backend response
       onSuccess(data);
     } catch (err) {
       setError("Failed to upload file: " + err.message);
     }
   };
-
-  const readFile = (file) => {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = (e) => resolve(e.target.result);
-    reader.onerror = (e) => reject(new Error("Failed to read file"));
-    reader.readAsText(file);
-  });
-};
 
   const handleDragEnter = (e) => {
     e.preventDefault();
@@ -68,18 +53,20 @@ const Upload = ({ onSuccess }) => {
       onDragEnter={handleDragEnter}
       onDragLeave={handleDragLeave}
       style={{
-        height: "70vh",
-        border: "2px solid rgba(255, 255, 255, 0.2)",
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
         display: "flex",
         justifyContent: "center",
         alignItems: "center",
         backgroundColor: "#090D2B",
         color: "#fff",
-        borderRadius: "12px",
         flexDirection: "column",
         fontFamily: "'Segoe UI', sans-serif",
-        position: "relative",
         overflow: "hidden",
+        zIndex: 1000,
       }}
     >
       {/* Animated background elements */}
@@ -127,7 +114,6 @@ const Upload = ({ onSuccess }) => {
         maxWidth: "500px",
         width: "90%",
       }}>
-
         <h2 style={{ 
           marginBottom: "16px", 
           fontWeight: 600,
@@ -185,7 +171,6 @@ const Upload = ({ onSuccess }) => {
         )}
       </div>
 
-      {/* CSS for animations */}
       <style jsx>{`
         @keyframes float {
           0% {

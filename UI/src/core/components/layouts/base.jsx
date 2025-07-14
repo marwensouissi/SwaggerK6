@@ -4,7 +4,7 @@
 import React from "react"
 import PropTypes from "prop-types"
 import ListSelectedApis from "../list-selected-apis"
-import { Warning } from "postcss"
+import Upload from "core/components/Upload"
 
 export default class BaseLayout extends React.Component {
   static propTypes = {
@@ -54,14 +54,9 @@ export default class BaseLayout extends React.Component {
     }
 
     if (loadingStatus === "failed") {
-      loadingMessage = (
-        <div className="info">
-          <div className="loading-container">
-            <h4 className="title">Please upload a Swagger JSON file to continue.
-</h4>
-          </div>
-        </div>
-      )
+  loadingMessage = <Upload onSuccess={() => window.location.reload()} />;
+
+      
     }
 
     if (loadingStatus === "failedConfig") {

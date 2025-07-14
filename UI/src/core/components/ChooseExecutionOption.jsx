@@ -491,7 +491,8 @@ const handleCopyAll = () => {
         }
         
         .modal-content {
-  background: linear-gradient(145deg, #2d3748, #1a202c);
+  background: linear-gradient(145deg, #1a202c, #0d1117);
+
   border-radius: 12px;
   padding: 2rem;
   width: 85%;
@@ -554,7 +555,8 @@ const handleCopyAll = () => {
         }
         
         .launch-btn {
-          background: #2d3748;
+          background: linear-gradient(145deg,rgb(45, 54, 71),rgb(19, 24, 32));
+
           border: none;
           border-radius: 10px;
           padding: 1.5rem;
@@ -567,6 +569,7 @@ const handleCopyAll = () => {
           position: relative;
           overflow: hidden;
         }
+
         
         .launch-btn.cloud {
           margin: auto;
@@ -654,7 +657,7 @@ const handleCopyAll = () => {
         }
         
         .run-again-btn:hover {
-          background: linear-gradient(135deg, #38a169, #2f855a);
+          background: linear-gradient(135deg,rgb(0, 157, 255), #2f855a);
         }
         
         .stop-btn {

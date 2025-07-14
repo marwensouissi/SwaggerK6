@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Depends, Query
+from fastapi import APIRouter, HTTPException, Depends, Query, UploadFile
 from pathlib import Path
 from typing import Optional, List
 from sqlalchemy.orm import Session
@@ -13,18 +13,22 @@ import json
 import uuid
 import logging
 import json
+import subprocess
+import tarfile
+import shutil
+from datetime import datetime
 
- 
 router = APIRouter(prefix="/generate", tags=["generator"])
 logger = logging.getLogger(__name__)
- 
- 
+
+# Set your local Bitbucket repo path here
+BITBUCKET_REPO_PATH = Path("C:/Users/marwe/path/to/itona-k6")  # <-- Update this to your actual local clone path
+GENERATED_DIR = Path(__file__).resolve().parent.parent / "generated"
 # Helper functions
- 
+
 def regex_replace(s, pattern, replacement):
     return re.sub(pattern, replacement, s)
- 
- 
+
 def extract_base_url(swagger_data):
     if "openapi" in swagger_data and "servers" in swagger_data:
         return swagger_data["servers"][0]["url"].rstrip("/")
@@ -34,10 +38,9 @@ def extract_base_url(swagger_data):
         base_path = swagger_data.get("basePath", "")
         return f"{scheme}://{host}{base_path}".rstrip("/")
     return ""
- 
- 
+
 # Main route
- 
+
 @router.post("/from-config")
 def generate_test_file(
     request: GenerateRequest,
@@ -124,3 +127,94 @@ def generate_test_file(
         raise HTTPException(status_code=500, detail=f"Error generating test: {str(e)}")
     
 
+
+
+def k6_archive(js_file_path: Path, output_dir: Path) -> Path:
+    output_tar = output_dir / f"{js_file_path.stem}.tar"
+    cmd = ["k6", "archive", str(js_file_path), "--output", str(output_tar)]
+    result = subprocess.run(cmd, capture_output=True)
+    if result.returncode != 0:
+        raise RuntimeError(f"k6 archive failed: {result.stderr.decode()}")
+    return output_tar
+
+def generate_configmap_yaml(name: str, namespace: str = "default") -> str:
+    return f"""
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {name}-configmap
+  namespace: {namespace}
+data:
+  main.js: |
+    # k6 test will be loaded by initContainer from this ConfigMap
+    (will be mounted via tar)
+""".strip()
+
+
+def generate_testrun_yaml(name: str) -> str:
+    return f"""
+apiVersion: k6.io/v1alpha1
+kind: TestRun
+metadata:
+  name: {name}
+spec:
+  script:
+    configMap:
+      name: {name}-configmap
+      file: main.js
+  parallelism: 1
+""".strip()
+
+
+def git_push(path: Path, message: str):
+    subprocess.run(["git", "add", "."], cwd=path)
+    subprocess.run(["git", "commit", "-m", message], cwd=path)
+    # Use HTTPS with app password for Bitbucket push
+    remote_url = "https://***REMOVED_API_KEY***4@bitbucket.org/ndammak/itona-k6.git"
+    subprocess.run(["git", "push", remote_url], cwd=path)
+
+@router.post("/archive-and-push")
+def archive_and_push_test(
+    filename: str = Query(..., description="Generated test filename"),
+    current_user: User = Depends(get_current_user)
+):
+    try:
+        js_file_path = GENERATED_DIR / filename
+        if not js_file_path.exists():
+            raise HTTPException(status_code=404, detail=f"Test file {filename} not found")
+
+        # 1. Archive
+        tar_path, archive_dir = k6_archive(js_file_path, GENERATED_DIR)
+        test_name = archive_dir.name
+
+        # 2. Create YAMLs
+        (archive_dir / "configmap.yaml").write_text(generate_configmap_yaml(test_name))
+        (archive_dir / "testrun.yaml").write_text(generate_testrun_yaml(test_name))
+
+        # 3. Copy to Git repo
+        dest_dir = BITBUCKET_REPO_PATH / "k6-tests" / test_name
+        dest_dir.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copytree(archive_dir, dest_dir)
+
+        # 4. Git commit & push
+        git_push(BITBUCKET_REPO_PATH, f"Add test {test_name} by {current_user.email}")
+
+        return {"status": "success", "pushed": True, "test_name": test_name}
+    except Exception as e:
+        logger.exception("Failed to archive and push test")
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+
+# ROUTE: List available Swagger JSON files
+@router.get("/swagger-files", response_model=List[str])
+def list_swagger_files():
+    swagger_dir = Path(__file__).resolve().parents[3] / "UI" / "dev-helpers"
+    return [f.name for f in swagger_dir.glob("*.json")]
+
+# ROUTE: Optional - Get k6 Test Pod Logs (if ArgoCD + k6-operator used)
+@router.get("/logs/{testrun_name}")
+def get_k6_logs(testrun_name: str):
+    try:
+        logs = subprocess.check_output(["kubectl", "logs", f"job/{testrun_name}"], stderr=subprocess.STDOUT)
+        return {"logs": logs.decode()}
+    except subprocess.CalledProcessError as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get logs: {e.output.decode()}")

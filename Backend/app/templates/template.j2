@@ -29,8 +29,18 @@ export let options = {
  
  
 export default function () {
+
+let token;
+
+{% if token %}
+token = "{{ token }}";
+console.log("🔐 Using provided token.");
+{% else %}
 const user = signup();
-const token = login(user.email, PASSWORD);
+token = login(user.email, PASSWORD);
+console.log("🔐 Token acquired via signup/login.");
+{% endif %}
+
  
 {% for test in tests %}
 {% set func_name = test.save_as | default(test.function) %}

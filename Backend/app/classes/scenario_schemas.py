@@ -37,6 +37,8 @@ class GenerateRequest(BaseModel):
     stages: Optional[List[Stage]] = None
     vus: Optional[int] = None
     iterations: Optional[int] = None
+    token: Optional[str] = None  # <-- Add this
+
 
 class ClusterRequest(BaseModel):
     token: str

@@ -12,6 +12,7 @@ const CloudClusterForm = ({ onBack }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentAction, setCurrentAction] = useState(null); // "deploy" or "destroy"
   const wsRef = useRef(null);
+const [isDeployed, setIsDeployed] = useState(false);
 
   const openWebSocket = (action) => {
     if (wsRef.current) {
@@ -35,10 +36,19 @@ const CloudClusterForm = ({ onBack }) => {
       setStatusMessages((prev) => [...prev, `🔌 Connected to WebSocket. Starting ${action}...`]);
     };
 
-    ws.onmessage = (event) => {
-      setStatusMessages((prev) => [...prev, event.data]);
-    };
-
+ws.onmessage = (event) => {
+  setStatusMessages((prev) => {
+    if (prev[prev.length - 1] !== event.data) {
+      return [...prev, event.data];
+    }
+    return prev;
+  });
+    if (event.data.includes("Cluster deployment complete")) {
+    setIsDeployed(true);
+    setIsSubmitting(false);  // stop spinner
+    setCurrentAction(null);
+  }
+};
     ws.onerror = (err) => {
       setStatusMessages((prev) => [...prev, "❌ WebSocket Error"]);
       console.error(err);
@@ -171,13 +181,17 @@ const CloudClusterForm = ({ onBack }) => {
 
         <div className="console-output">
           <div className="console-header">
-            <span>Deployment Logs</span>
-            {isSubmitting && (
-              <span className="status-badge">
-                <span className="pulse-dot"></span>
-                {currentAction === 'deploy' ? 'DEPLOYING' : currentAction === 'destroy' ? 'DESTROYING' : ''}
-              </span>
-            )}
+        <span>Deployment Logs</span>
+        {isSubmitting && (
+          <>
+            <span className="status-badge">
+              <span className="pulse-dot"></span>
+              {currentAction === 'deploy' ? 'DEPLOYING' : currentAction === 'destroy' ? 'DESTROYING' : ''}
+              <span className="spinner" />
+
+            </span>
+          </>
+        )}
           </div>
           <div className="console-content" aria-live="polite" aria-atomic="true">
             {statusMessages.length > 0 ? (
@@ -223,9 +237,13 @@ const CloudClusterForm = ({ onBack }) => {
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
           >
-            {isSubmitting ? (currentAction === 'deploy' ? 'Deploying...' : 'Destroying...') : 'Launch Cluster'}
-          </motion.button>
-        </div>
+ {isSubmitting
+    ? (currentAction === 'deploy' ? 'Deploying...' : 'Destroying...')
+    : isDeployed
+      ? 'RUN TEST'
+      : 'Launch Cluster'}
+                </motion.button>
+        </div>  
 
         <style jsx>{`
 
@@ -235,7 +253,20 @@ const CloudClusterForm = ({ onBack }) => {
     margin-top: -2%;
     margin-bottom: 7%;
     }
-                
+        .spinner {
+  border: 3px solid rgba(255, 255, 255, 0.2);
+  border-top: 3px solid #f7ca18;
+  border-radius: 50%;
+  width: 14px;
+  height: 14px;
+  animation: spin 1s linear infinite;
+  margin-left: 10px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+        
                 
           .modal-overlay {
             position: fixed;

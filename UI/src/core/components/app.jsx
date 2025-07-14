@@ -182,7 +182,9 @@ class App extends React.Component {
 
     return (
       <div style={{
-        backgroundColor: "#090D2B",
+        // backgroundColor: "#090D2B",
+            background:"linear-gradient(145deg, rgb(37, 53, 79), rgb(11, 14, 19))",
+
         minHeight: "100vh",
         display: "flex",
         alignItems: "center",
@@ -335,7 +337,7 @@ class App extends React.Component {
     return (
       <div style={{
         minHeight: "100vh",
-        background: "#090D2B",
+        background: "linear-gradient(145deg, #1a202c, #0d1117)",
         color: "#fff",
         display: "flex",
         flexDirection: "column",
@@ -402,146 +404,129 @@ class App extends React.Component {
     const Layout = this.getLayout()
 
     return (
-      <div>
-        {/* K6 Functions Toggle Button */}
-        <button
-          onClick={() => this.setState({ showK6Functions: !showK6Functions })}
-          style={{
-            position: "fixed",
-            top: "22px",
-            right: "96px",
-            zIndex: 1000,
-            padding: "10px 24px",
+  <div>
+    {/* Navigation Bar */}
+    <div style={{
+      position: "fixed",
+      top: "22px",
+      right: "10px",
+      zIndex: 1000,
+      display: "flex",
+      alignItems: "center",
+      gap: "8px",
+      color: "white",
+      fontSize: "14px",
+      fontFamily: "Arial, sans-serif"
+    }}>
+         
+      {/* Cluster Status */}
+ <div style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
+            padding: "8px 16px",
             borderRadius: "6px",
-            backgroundColor: "#62a03f",
-            color: "#fff",
-            border: "none",
-            cursor: "pointer"
-          }}
-        >
-          K6 Functions
-        </button>
-        <button
-  style={{
-    position: "fixed",
-    top: "22px",
-    right: "360px",
-    zIndex: 1000,
-    padding: "10px 16px",
-    borderRadius: "6px",
-    backgroundColor: this.state.clusterStatus === "on" ? "#28a745" : "#dc3545",
-    color: "#fff",
-    border: "none",
-    cursor: "default",
-    display: "flex",
-    alignItems: "center",
-    gap: "8px",
-  }}
-  disabled
->
-  <span role="img" aria-label="cloud">☁️</span>
-  {this.state.clusterStatus === "on" ? "ON" : "OFF"}
-</button>
-
-
-          <button
-    onClick={() => this.setState({ showAddUserModal: true })}
-    style={{
-      position: "fixed",
-      top: "22px",
-      right: "220px",
-      zIndex: 1000,
-      padding: "10px 24px",
-      borderRadius: "6px",
-      backgroundColor: "#007bff",
-      color: "#fff",
-      border: "none",
-      marginRight: "12px",
-      cursor: "pointer"
-    }}
-  >
-    Check mqtt
-  </button>
-{this.state.role === "admin" && (
-  <button
-    onClick={() => this.setState({ showAddUserModal: true })}
-    style={{
-      position: "fixed",
-      top: "22px",
-      right: "220px",
-      zIndex: 1000,
-      padding: "10px 24px",
-      borderRadius: "6px",
-      backgroundColor: "#007bff",
-      color: "#fff",
-      border: "none",
-      marginRight: "12px",
-      cursor: "pointer"
-    }}
-  >
-    Add User
-  </button>
-)}
-        {/* K6 Function List Display */}
-        {showK6Functions && (
-          <div style={{
-            position: "fixed",
-            top: "60px",
-            right: "140px",
-            zIndex: 999,
-            width: "300px",
-            backgroundColor: "#2d3748",
-            border: "1px solid #ccc",
-            borderRadius: "8px",
-            padding: "16px",
-            boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
-            fontSize: "14px",
-            color: "#000"
+            backgroundColor: "rgb(83 16 16 / 10%)"
           }}>
-            <h4 style={{ margin: "0 0 10px" }}>K6 Utility Functions</h4>
-            <ul style={{ paddingLeft: "20px", margin: 0 }}>
-              {k6Functions.map((fn, idx) => (
-                <li key={idx} style={{ marginBottom: "8px" }}>
-                  <strong>{fn.name}</strong><br />
-                  <span style={{ fontSize: "12px", color: "#949ea6" }}>{fn.description}</span>
-                </li>
-              ))}
-            </ul>
+            <div style={{
+              width: "10px",
+              height: "10px",
+              borderRadius: "50%",
+              backgroundColor: this.state.clusterStatus === "on" ? "#52c41a" : "#ff4d4f",
+              boxShadow: this.state.clusterStatus === "on" ? "0 0 8px #52c41a" : "0 0 8px #ff4d4f"
+            }} />
+            <span>Cluster: </span>
+            <span style={{
+              color: this.state.clusterStatus === "on" ? "#52c41a" : "#ff4d4f",
+              fontWeight: "bold"
+            }}>
+              {this.state.clusterStatus === "on" ? "ONLINE" : "OFFLINE"}
+            </span>
           </div>
-        )}
 
-        {/* Logout Button */}
-        <button
-          onClick={() => {
-            sessionStorage.removeItem("authToken")
-            this.setState({ isLoggedIn: false, token: null })
-            this.props.system?.authActions?.logout()
-          }}
-          style={{
-            position: "fixed",
-            top: "22px",
-            right: "10px",
-            zIndex: 1000,
-            padding: "10px 16px",
-            borderRadius: "6px",
-            backgroundColor: "#ff4d4f",
-            color: "#fff",
-            border: "none",
-            cursor: "pointer"
-          }}
+      <span>|</span>
+      {/* K6 Functions Link */}
+      <div style={{ display: "flex", alignItems: "center" }}>
+        <span 
+          onClick={() => this.setState({ showK6Functions: !showK6Functions })}
+          style={{ cursor: "pointer", display: "flex", alignItems: "center" }}
         >
-          Logout
-        </button>
-        <AddUserModal
-          isOpen={this.state.showAddUserModal}
-          onClose={() => this.setState({ showAddUserModal: false })}
-        />
-        <Layout />
+          <span role="img" aria-label="functions" style={{ marginRight: "4px" }}>⚙️</span>
+          K6 Functions
+        </span>
       </div>
-    )
-  }
-}
+       
 
+          
+
+      
+      {this.state.role === "admin" && (
+        <>
+          <span>|</span>
+          <div style={{ display: "flex", alignItems: "center" }}>
+            <span 
+              onClick={() => this.setState({ showAddUserModal: true })}
+              style={{ cursor: "pointer", display: "flex", alignItems: "center" }}
+            >
+              <span role="img" aria-label="add user" style={{ marginRight: "4px" }}>👤</span>
+              Add User
+            </span>
+          </div>
+        </>
+      )}
+      
+      
+      {/* Logout Link */}
+      <div style={{ display: "flex", alignItems: "center" }}>
+        <span 
+          onClick={() => {
+            sessionStorage.removeItem("authToken");
+            this.setState({ isLoggedIn: false, token: null });
+            this.props.system?.authActions?.logout();
+          }}
+          style={{ cursor: "pointer", display: "flex", alignItems: "center" }}
+        >
+          <span role="img" aria-label="logout" style={{ marginRight: "4px" }}>🚪</span>
+          Logout
+        </span>
+      </div>
+    </div>
+
+    {/* K6 Function List Display */}
+    {showK6Functions && (
+      <div style={{
+        position: "fixed",
+        top: "60px",
+        right: "140px",
+        zIndex: 999,
+        width: "300px",
+        backgroundColor: "#2d3748",
+        border: "1px solid #ccc",
+        borderRadius: "8px",
+        padding: "16px",
+        boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
+        fontSize: "14px",
+        color: "#000"
+      }}>
+        <h4 style={{ margin: "0 0 10px" }}>K6 Utility Functions</h4>
+        <ul style={{ paddingLeft: "20px", margin: 0 }}>
+          {k6Functions.map((fn, idx) => (
+            <li key={idx} style={{ marginBottom: "8px" }}>
+              <strong>{fn.name}</strong><br />
+              <span style={{ fontSize: "12px", color: "#949ea6" }}>{fn.description}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    )}
+
+    <AddUserModal
+      isOpen={this.state.showAddUserModal}
+      onClose={() => this.setState({ showAddUserModal: false })}
+    />
+    <Layout />
+  </div>
+)}}
 App.propTypes = {
   getComponent: PropTypes.func.isRequired,
   layoutSelectors: PropTypes.object.isRequired,

@@ -85,7 +85,7 @@ const handleLaunchTest = () => {
     >
       <div
         style={{
-          background: "linear-gradient(145deg, #2d3748, #1a202c)",
+            background: 'linear-gradient(145deg, #1a202c, #0d1117)',
           borderRadius: "12px",
           padding: "24px",
           width: "450px",
@@ -141,7 +141,7 @@ const handleLaunchTest = () => {
             <div
               key={index}
               style={{
-                backgroundColor: "rgba(45, 55, 72, 0.5)",
+                backgroundColor: "rgba(29, 41, 62, 0.5)",
                 borderRadius: "8px",
                 padding: "16px",
                 marginBottom: "16px",
@@ -378,7 +378,7 @@ const handleLaunchTest = () => {
             onClick={handleLaunchTest}
             style={{
               padding: "10px 20px",
-              background: "#4299e1",
+              background: "linear-gradient(135deg, rgb(65, 111, 211), rgb(0, 81, 255))",
               border: "none",
               borderRadius: "6px",
               color: "white",
