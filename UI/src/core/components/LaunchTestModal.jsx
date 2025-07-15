@@ -88,7 +88,7 @@ const handleLaunchTest = () => {
             background: 'linear-gradient(145deg, #1a202c, #0d1117)',
           borderRadius: "12px",
           padding: "24px",
-          width: "450px",
+          width: "500px",
           maxWidth: "90vw",
           boxShadow: "0 10px 25px rgba(0, 0, 0, 0.3)",
           color: "#f7fafc",

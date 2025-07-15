@@ -226,8 +226,17 @@ def archive_and_push_test(
         shutil.move(str(tar_path), test_cloud_dir / tar_path.name)
 
         # 2. Generate Kubernetes YAMLs inside cloud/test_name folder
-        (test_cloud_dir / "configmap.yaml").write_text(generate_configmap_yaml(test_cloud_dir / tar_path.name))
-        (test_cloud_dir / "testrun.yaml").write_text(generate_testrun_yaml(test_name))
+        # 2. Generate Kubernetes YAMLs with custom filenames
+        configmap_filename = f"{test_name}-configmap.yaml"
+        testrun_filename = f"{test_name}-testrun.yaml"
+
+        (test_cloud_dir / configmap_filename).write_text(
+            generate_configmap_yaml(test_cloud_dir / tar_path.name)
+        )
+        (test_cloud_dir / testrun_filename).write_text(
+            generate_testrun_yaml(test_name)
+        )
+
 
         # 3. Copy cloud/test_name folder to Bitbucket repo under k6-tests/test_name
         dest_dir = BITBUCKET_REPO_PATH / "k6-tests" / test_name
@@ -238,7 +247,13 @@ def archive_and_push_test(
         # 4. Commit and push
         git_push(BITBUCKET_REPO_PATH, f"Add test {test_name}")
 
-        return {"status": "success", "pushed": True, "test_name": test_name}
+        return {
+            "status": "success",
+            "pushed": True,
+            "test_name": test_name,
+            "configmap_file": configmap_filename,
+            "testrun_file": testrun_filename,
+        }
 
     except Exception as e:
         logger.exception("Failed to archive and push test")

@@ -1,0 +1,22 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: k6-tests
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://bitbucket.org/ndammak/itona-k6.git
+    targetRevision: main
+    path: Backend/app/generated/cloud
+    directory:
+      recurse: true
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: default
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

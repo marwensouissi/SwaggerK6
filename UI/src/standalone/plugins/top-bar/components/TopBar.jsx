@@ -395,7 +395,7 @@ const styles = `
     cursor: not-allowed;
   }
     .swagger-ui .upload-btn {
-    background: linear-gradient(135deg, #354a72,rgb(24, 44, 85))
+    background: linear-gradient(135deg, #354a72,rgb(24, 47, 92))
 }
 
   .controls-wrapper {

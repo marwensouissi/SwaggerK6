@@ -327,7 +327,7 @@ const getFileName = (filePath) => {
   onClick={() => setTokenModalOpen(true)}
   style={{
     padding: '8px 16px',
-    background: 'linear-gradient(135deg, #2d3748, #1a202c)',
+    background: 'linear-gradient(135deg, rgb(48 62 85), rgb(54 90 162))',
     color: '#e2e8f0',
     border: `1px solid ${hasToken ? '#2ea44f' : '#4a5568'}`,
     borderRadius: '8px',
