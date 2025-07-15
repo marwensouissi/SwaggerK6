@@ -144,13 +144,21 @@ resource "helm_release" "argocd" {
   wait             = true
   timeout          = 300
 
-  values = [
-    <<EOF
+values = [
+  <<EOF
 server:
   service:
     type: LoadBalancer
+    ports:
+      - name: http
+        port: 80
+        targetPort: 8777
+      - name: https
+        port: 443
+        targetPort: 8777
 EOF
-  ]
+]
+
 
   depends_on = [
     digitalocean_kubernetes_cluster.k8s_cluster,

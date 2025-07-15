@@ -327,9 +327,9 @@ const getFileName = (filePath) => {
   onClick={() => setTokenModalOpen(true)}
   style={{
     padding: '8px 16px',
-    background: 'linear-gradient(135deg, rgb(48 62 85), rgb(54 90 162))',
+    background: 'linear-gradient(135deg, rgb(45, 55, 72), #475a80)',
     color: '#e2e8f0',
-    border: `1px solid ${hasToken ? '#2ea44f' : '#4a5568'}`,
+    border: `1px solid ${hasToken ? '#2f70f5' : '#4a5568'}`,
     borderRadius: '8px',
     cursor: 'pointer',
     fontSize: '14px',
@@ -342,15 +342,15 @@ const getFileName = (filePath) => {
   }}
   onMouseEnter={(e) => {
     e.target.style.background = 'linear-gradient(135deg, #3b4658, #2d3748)';
-    e.target.style.borderColor = hasToken ? '#2ea44f' : '#667eea';
+    e.target.style.borderColor = hasToken ? '#2f70f5' : '#667eea';
   }}
   onMouseLeave={(e) => {
     e.target.style.background = 'linear-gradient(135deg, #2d3748, #1a202c)';
-    e.target.style.borderColor = hasToken ? '#2ea44f' : '#4a5568';
+    e.target.style.borderColor = hasToken ? '#2f70f5' : '#4a5568';
   }}
 >
   {hasToken ? (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2ea44f" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2f70f5" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M20 6L9 17l-5-5"></path>
     </svg>
   ) : (
@@ -525,7 +525,7 @@ const getFileName = (filePath) => {
             background: activeTab === 'HTTP' ? '#f6f8fa' : '#f6f8fa',
             color: activeTab === 'HTTP' ? '#24292e' : '#24292e',
             border: 'none',
-            borderBottom: activeTab === 'HTTP' ? '2px solid #2ea44f' : '2px solid #eaecef',
+            borderBottom: activeTab === 'HTTP' ? '2px solid #2f70f5' : '2px solid #eaecef',
             fontWeight: 600,
             cursor: 'pointer',
           }}
@@ -540,7 +540,7 @@ const getFileName = (filePath) => {
             background: activeTab === 'MQTT' ? '#f6f8fa' : '#f6f8fa',
             color: activeTab === 'MQTT' ? '#24292e' : '#24292e',
             border: 'none',
-            borderBottom: activeTab === 'MQTT' ? '2px solid #2ea44f' : '2px solid #eaecef',
+            borderBottom: activeTab === 'MQTT' ? '2px solid #2f70f5' : '2px solid #eaecef',
             fontWeight: 600,
             cursor: 'pointer',
           }}
@@ -740,12 +740,13 @@ const getFileName = (filePath) => {
                     <button
               style={{
                 padding: '7px 11px',
-                background: 'linear-gradient(135deg, #2d3748, #1a202c)',
+                background: 'linear-gradient(135deg, rgb(45, 55, 72), #475a80)',
                 color: '#ffffff',
                 border: 'none',
                 borderRadius: '6px',
-                fontSize: '14px',
-                position: 'fixed',
+                fontSize: '18px',
+                position: 'inherit',
+                marginLeft: '35%',
                 top: '607px',
                 right: '208px',
                 fontWeight: 500,
@@ -759,7 +760,7 @@ const getFileName = (filePath) => {
                 e.target.style.backgroundColor = '#2c974b';
               }}
               onMouseLeave={(e) => {
-                e.target.style.backgroundColor = '#2ea44f';
+                e.target.style.backgroundColor = '#2f70f5';
               }}
               onMouseDown={(e) => {
                 e.target.style.backgroundColor = '#298e46';
@@ -819,7 +820,7 @@ const getFileName = (filePath) => {
                       Inject MQTT
                     </button>
                   ) : (
-                    <span style={{marginTop: '18px', display: 'inline-block', color: '#2ea44f', fontWeight: 500}}>MQTT already injected</span>
+                    <span style={{marginTop: '18px', display: 'inline-block', color: '#2f70f5', fontWeight: 500}}>MQTT already injected</span>
                   )}
                 </div>
               ) : (
@@ -1001,7 +1002,7 @@ const getFileName = (filePath) => {
                             Inject MQTT
                           </button>
                         ) : (
-                          <span style={{marginLeft: '8px', color: '#2ea44f', fontWeight: 500}}>Injected</span>
+                          <span style={{marginLeft: '8px', color: '#2f70f5', fontWeight: 500}}>Injected</span>
                         )}
                       </li>
                     );
@@ -1026,7 +1027,7 @@ const getFileName = (filePath) => {
                 e.target.style.backgroundColor = '#2c974b';
               }}
               onMouseLeave={(e) => {
-                e.target.style.backgroundColor = '#2ea44f';
+                e.target.style.backgroundColor = '#2f70f5';
               }}
               onMouseDown={(e) => {
                 e.target.style.backgroundColor = '#298e46';
