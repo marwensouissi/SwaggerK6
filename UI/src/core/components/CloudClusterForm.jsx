@@ -410,7 +410,6 @@ border: 1px solid #4a5568;
             outline: none;
             border-color: #667eea;
             box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2),
-                        inset 0 1px 3px rgba(0, 0, 0, 0.2);
           }
           
           .form-input::placeholder {
@@ -418,7 +417,7 @@ border: 1px solid #4a5568;
           }
           
           .console-output {
-            background: #0a0e17;
+            background:rgb(17, 27, 56);
             border-radius: 10px;
             margin-bottom: 2rem;
             border: 1px solid #2d3748;
@@ -472,7 +471,6 @@ border: 1px solid #4a5568;
             font-size: 0.9rem;
             color: #84BD00;
             line-height: 1.5;
-            background: rgba(32, 17, 78, 0.3);
           }
           
           .console-content pre {

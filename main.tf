@@ -166,30 +166,6 @@ EOF
   ]
 }
 
-resource "helm_release" "loki" {
-  name             = "loki"
-  namespace        = "loki"
-  repository       = "https://grafana.github.io/helm-charts"
-  chart            = "loki"
-  create_namespace = true
-  wait             = true
-}
-
-
-
-resource "helm_release" "promtail" {
-  name             = "promtail"
-  namespace        = "loki"
-  repository       = "https://grafana.github.io/helm-charts"
-  chart            = "promtail"
-  wait             = true
-
-  depends_on = [
-    helm_release.loki
-  ]
-}
-
-
 
 
 
