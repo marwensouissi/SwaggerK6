@@ -173,39 +173,6 @@ resource "helm_release" "loki" {
   chart            = "loki"
   create_namespace = true
   wait             = true
-
-values = [<<EOF
-deploymentMode: SingleBinary
-
-loki:
-  auth_enabled: false
-  commonConfig:
-    replication_factor: 1
-  storage:
-    type: filesystem
-  schemaConfig:
-    configs:
-      - from: "2024-04-01"
-        store: tsdb
-        object_store: filesystem
-        schema: v13
-        index:
-          prefix: loki_index_
-          period: 24h
-  storage_config:
-    filesystem:
-      directory: /var/loki/chunks
-  rulerConfig:
-    storage:
-      type: local
-
-singleBinary:
-  replicas: 1
-
-persistence:
-  enabled: false
-EOF
-]
 }
 
 
@@ -217,16 +184,6 @@ resource "helm_release" "promtail" {
   chart            = "promtail"
   wait             = true
 
-  values = [
-    <<EOF
-config: 
-  clients:
-    - url: http://loki.loki.svc.cluster.local:3100/loki/api/v1/push
-  snippets:
-    pipelineStages:
-      - cri: {}
-EOF
-  ]
   depends_on = [
     helm_release.loki
   ]
