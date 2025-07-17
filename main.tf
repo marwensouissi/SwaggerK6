@@ -173,7 +173,6 @@ resource "helm_release" "loki" {
   chart            = "loki"
   create_namespace = true
   wait             = true
-  timeout          = 300
 
   values = [
     <<EOF
@@ -181,13 +180,7 @@ loki:
   auth_enabled: false
 EOF
   ]
-
-  depends_on = [
-    digitalocean_kubernetes_cluster.k8s_cluster,
-    local_file.kubeconfig_yaml
-  ]
 }
-
 
 
 resource "helm_release" "promtail" {
@@ -195,9 +188,7 @@ resource "helm_release" "promtail" {
   namespace        = "loki"
   repository       = "https://grafana.github.io/helm-charts"
   chart            = "promtail"
-  create_namespace = false # Already created by Loki
   wait             = true
-  timeout          = 300
 
   values = [
     <<EOF
@@ -209,7 +200,6 @@ config:
       - cri: {}
 EOF
   ]
-
   depends_on = [
     helm_release.loki
   ]
