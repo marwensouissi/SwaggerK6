@@ -274,7 +274,6 @@ ws.onmessage = (event) => {
             left: 0;
             right: 0;
             bottom: 0;
-            background-color: rgba(0, 0, 0, 0.7);
             display: flex;
             justify-content: center;
             align-items: center;
@@ -473,7 +472,7 @@ border: 1px solid #4a5568;
             font-size: 0.9rem;
             color: #84BD00;
             line-height: 1.5;
-            background: rgba(0, 0, 0, 0.3);
+            background: rgba(32, 17, 78, 0.3);
           }
           
           .console-content pre {
