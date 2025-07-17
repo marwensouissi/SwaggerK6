@@ -504,7 +504,6 @@ border: 1px solid #4a5568;
           }
           
           .cancel-btn:hover:not(:disabled) {
-            background: rgba(255, 255, 255, 0.05);
             border-color: #667eea;
           }
           
