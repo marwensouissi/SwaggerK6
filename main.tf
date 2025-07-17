@@ -174,10 +174,30 @@ resource "helm_release" "loki" {
   create_namespace = true
   wait             = true
 
-  values = [
-    <<EOF
+  values = [<<EOF
 loki:
   auth_enabled: false
+  commonConfig:
+    replication_factor: 1
+  storage:
+    type: filesystem
+  schemaConfig:
+    configs:
+      - from: "2022-01-01"
+        store: boltdb-shipper
+        object_store: filesystem
+        schema: v11
+        index:
+          prefix: index_
+          period: 24h
+  compactor:
+    retention_enabled: false
+
+singleBinary:
+  replicas: 1
+
+persistence:
+  enabled: false
 EOF
   ]
 }
