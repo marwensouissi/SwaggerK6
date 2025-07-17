@@ -9,6 +9,9 @@ FLUENT_BIT_RELEASE_NAME="fluent-bit"
 LOKI_HELM_REPO="https://grafana.github.io/helm-charts"
 FLUENT_BIT_HELM_REPO="https://fluent.github.io/helm-charts"
 
+cd /private/var/jenkins/workspace/DevOps/K6/cluster-builder-k6
+export KUBECONFIG="$(pwd)/kubeconfig_do.yaml"
+
 echo "🛠️ Creating namespace $NAMESPACE..."
 kubectl create namespace $NAMESPACE --dry-run=client -o yaml | kubectl apply -f -
 
