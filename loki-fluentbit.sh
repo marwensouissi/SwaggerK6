@@ -101,7 +101,3 @@ helm upgrade --install $FLUENT_BIT_RELEASE_NAME fluent/fluent-bit \
   --namespace $NAMESPACE \
   --set config.existingConfigMap=fluent-bit-custom-config
 
-echo "✅ Installation complete!"
-
-echo "🌐 Wait for Loki LoadBalancer IP..."
-kubectl get svc -n $NAMESPACE -w | grep $LOKI_RELEASE_NAME
