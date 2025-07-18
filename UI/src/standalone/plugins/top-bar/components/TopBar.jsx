@@ -3,6 +3,10 @@ import PropTypes from "prop-types"
 import {parseSearch, serializeSearch} from "core/utils"
 import Upload from "core/components/Upload"
 import { color } from "framer-motion"
+import { MdDriveFolderUpload } from "react-icons/md";
+import { FaUpload } from "react-icons/fa";
+
+
 import ListSelectedApis from "../../../../core/components/list-selected-apis"; // Corrected path to match the actual file structure
 
 class TopBar extends React.Component {
@@ -322,10 +326,14 @@ if (allSpecs.length) {
               
               {/* Add Upload button next to the dropdown */}
               <Button 
-                className="upload-btn"
+                className="upload-btn "
                 onClick={this.toggleUploadModal}
-              >
+              > 
+                <FaUpload />
+
                 Upload JSON
+
+
               </Button>
             </div>
 
@@ -396,6 +404,12 @@ const styles = `
   }
     .swagger-ui .upload-btn {
     background: linear-gradient(135deg, #354a72,rgb(24, 47, 92))
+
+}
+
+    .swagger-ui .upload-btn > svg{
+ 
+  margin-right: 8px; /* Adjust this value as needed */
 }
 
   .controls-wrapper {

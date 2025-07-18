@@ -297,6 +297,7 @@ const getFileName = (filePath) => {
     <div style={{
       height: '85vh',
       width: '100%',
+      width: '123%',
       maxWidth: '500px',
       border: '1px solid #e1e4e8',
       borderRadius: '12px',

@@ -4,6 +4,8 @@ import requests
 import asyncio
 import logging
 import json
+import subprocess
+import re
 import time
 
 router = APIRouter(prefix="/jenkins", tags=["jenkins"])
@@ -43,83 +45,189 @@ async def fetch_build_status(session, auth, build_number):
         return None
 
 
+# async def run_k6_test_websocket(websocket: WebSocket):
+#     await websocket.accept()
+#     logger.info("WebSocket connection opened")
+
+#     try:
+#         data = json.loads(await websocket.receive_text())
+#         region = data.get("region", "nyc3")
+#         cluster_name = data.get("cluster_name", "my-k6-cluster")
+#         node_size = data.get("node_size", "s-2vcpu-4gb")
+#         logger.info(f"Received cluster params: {data}")
+#     except Exception as e:
+#         logger.error(f"Invalid payload: {e}")
+#         await websocket.send_text("❌ Invalid cluster configuration payload.")
+#         await websocket.close()
+#         return
+
+#     session = requests.Session()
+#     auth = (USERNAME, API_TOKEN)
+#     build_url = f"{JENKINS_URL}{JENKINS_JOB_PATH}/buildWithParameters"
+#     params = {
+#         "token": TRIGGER_TOKEN,
+#         "REGION": region,
+#         "CLUSTER_NAME": cluster_name,
+#         "NODE_SIZE": node_size
+#     }
+
+#     try:
+#         resp = session.post(build_url, params=params, auth=auth, allow_redirects=False)
+#         if resp.status_code != 201:
+#             raise Exception(f"Jenkins job trigger failed: {resp.status_code}")
+#         queue_url = resp.headers.get("Location")
+#         if not queue_url:
+#             raise Exception("Missing queue location in Jenkins response.")
+#     except Exception as e:
+#         await websocket.send_text(f"❌ {e}")
+#         await websocket.close()
+#         return
+
+#     build_number = None
+#     for _ in range(15):
+#         try:
+#             q_resp = session.get(f"{queue_url}api/json", auth=auth)
+#             if q_resp.status_code == 200 and q_resp.json().get("executable"):
+#                 build_number = q_resp.json()["executable"]["number"]
+#                 break
+#         except Exception as e:
+#             logger.warning(f"Queue polling failed: {e}")
+#         await asyncio.sleep(1)
+
+#     if not build_number:
+#         await websocket.send_text("❌ Timeout while waiting for build number.")
+#         await websocket.close()
+#         return
+
+#     await websocket.send_text(f"🚀 Job triggered: build number {build_number}")
+
+#     try:
+#         while True:
+#             status = await fetch_build_status(session, auth, build_number)
+#             if status:
+#                 await websocket.send_text(f"📦 Job Status: {status}")
+#             if status not in ("RUNNING", "PENDING"):
+#                 await websocket.send_text(f"✅ Final Status: {status}")
+#                 if status == "SUCCESS":
+#                     cluster_status_cache.update({
+#                         "cluster_exists": True,
+#                         "job_number": build_number,
+#                         "note": "Cluster created successfully via WebSocket"
+#                     })
+#                 break
+#             await asyncio.sleep(2)
+#     except WebSocketDisconnect:
+#         logger.info("WebSocket disconnected by client.")
+#     finally:
+#         await websocket.close()
+#         logger.info("WebSocket connection closed")
+def extract_ips_from_logs(log_text: str) -> dict:
+    result = {}
+
+    argocd_match = re.search(r"✅ ArgoCD server IP:\s*([\d.]+)", log_text)
+    if argocd_match:
+        result["argocd_ip"] = argocd_match.group(1)
+
+    loki_match = re.search(r"\+ LOKI_SERVER=([\d.]+)", log_text)
+    if loki_match:
+        result["loki_ip"] = loki_match.group(1)
+
+    return result
+
+
 @router.websocket("/ws-run-k6-test")
 async def run_k6_test_websocket(websocket: WebSocket):
     await websocket.accept()
-    logger.info("WebSocket connection opened")
+    logger.info("🔌 WebSocket connected")
 
     try:
         data = json.loads(await websocket.receive_text())
-        region = data.get("region", "nyc3")
-        cluster_name = data.get("cluster_name", "my-k6-cluster")
-        node_size = data.get("node_size", "s-2vcpu-4gb")
-        logger.info(f"Received cluster params: {data}")
+        params = {
+            "token": TRIGGER_TOKEN,
+            "REGION": data.get("region", "nyc3"),
+            "CLUSTER_NAME": data.get("cluster_name", "my-k6-cluster"),
+            "NODE_SIZE": data.get("node_size", "s-2vcpu-4gb"),
+        }
     except Exception as e:
-        logger.error(f"Invalid payload: {e}")
-        await websocket.send_text("❌ Invalid cluster configuration payload.")
-        await websocket.close()
-        return
+        await websocket.send_text(f"❌ Invalid payload: {e}")
+        return await websocket.close()
 
     session = requests.Session()
     auth = (USERNAME, API_TOKEN)
-    build_url = f"{JENKINS_URL}{JENKINS_JOB_PATH}/buildWithParameters"
-    params = {
-        "token": TRIGGER_TOKEN,
-        "REGION": region,
-        "CLUSTER_NAME": cluster_name,
-        "NODE_SIZE": node_size
-    }
 
-    try:
-        resp = session.post(build_url, params=params, auth=auth, allow_redirects=False)
-        if resp.status_code != 201:
-            raise Exception(f"Jenkins job trigger failed: {resp.status_code}")
-        queue_url = resp.headers.get("Location")
-        if not queue_url:
-            raise Exception("Missing queue location in Jenkins response.")
-    except Exception as e:
-        await websocket.send_text(f"❌ {e}")
-        await websocket.close()
-        return
+    # Trigger the Jenkins job
+    resp = session.post(f"{JENKINS_URL}{JENKINS_JOB_PATH}/buildWithParameters", params=params, auth=auth, allow_redirects=False)
+    if resp.status_code != 201:
+        await websocket.send_text("❌ Failed to trigger Jenkins job")
+        return await websocket.close()
 
+    queue_url = resp.headers.get("Location")
+    if not queue_url:
+        await websocket.send_text("❌ Jenkins queue location missing")
+        return await websocket.close()
+
+    # Poll queue to get build number
     build_number = None
     for _ in range(15):
-        try:
-            q_resp = session.get(f"{queue_url}api/json", auth=auth)
-            if q_resp.status_code == 200 and q_resp.json().get("executable"):
-                build_number = q_resp.json()["executable"]["number"]
-                break
-        except Exception as e:
-            logger.warning(f"Queue polling failed: {e}")
+        r = session.get(f"{queue_url}api/json", auth=auth)
+        if r.ok and r.json().get("executable"):
+            build_number = r.json()["executable"]["number"]
+            break
         await asyncio.sleep(1)
 
     if not build_number:
-        await websocket.send_text("❌ Timeout while waiting for build number.")
-        await websocket.close()
-        return
+        await websocket.send_text("❌ Timeout waiting for build number")
+        return await websocket.close()
 
-    await websocket.send_text(f"🚀 Job triggered: build number {build_number}")
+    build_url = f"{JENKINS_URL}{JENKINS_JOB_PATH}/{build_number}"
+    console_offset = 0
+    found_argocd_ip = None
+    found_loki_ip = None
 
     try:
         while True:
+            # Send "Running..." while job is active
             status = await fetch_build_status(session, auth, build_number)
-            if status:
-                await websocket.send_text(f"📦 Job Status: {status}")
-            if status not in ("RUNNING", "PENDING"):
-                await websocket.send_text(f"✅ Final Status: {status}")
-                if status == "SUCCESS":
-                    cluster_status_cache.update({
-                        "cluster_exists": True,
-                        "job_number": build_number,
-                        "note": "Cluster created successfully via WebSocket"
-                    })
+
+            # Fetch Jenkins log from current offset
+            log_resp = session.get(f"{build_url}/logText/progressiveText?start={console_offset}", auth=auth)
+            if log_resp.status_code == 200:
+                log_text = log_resp.text
+                console_offset = int(log_resp.headers.get("X-Text-Size", console_offset))
+
+                # Extract IPs if not already found
+                if not found_argocd_ip:
+                    argocd_match = re.search(r"ARGOCD_SERVER=([\d.]+)", log_text)
+                    if argocd_match:
+                        found_argocd_ip = argocd_match.group(1)
+                        await websocket.send_text(f"🌐 ArgoCD IP: {found_argocd_ip}")
+
+                if not found_loki_ip:
+                    loki_match = re.search(r"LOKI_SERVER=([\d.]+)", log_text)
+                    if loki_match:
+                        found_loki_ip = loki_match.group(1)
+                        await websocket.send_text(f"📊 Loki IP: {found_loki_ip}")
+
+            if status in ("SUCCESS", "FAILURE", "ABORTED"):
                 break
+
+            # Still running
+            await websocket.send_text("⏳ Running...")
             await asyncio.sleep(2)
+
+        # Final status
+        if status == "SUCCESS":
+            await websocket.send_text("✅ SUCCESS")
+        else:
+            await websocket.send_text(f"❌ {status}")
+
     except WebSocketDisconnect:
         logger.info("WebSocket disconnected by client.")
+    except Exception as e:
+        await websocket.send_text(f"❌ Error: {e}")
     finally:
         await websocket.close()
-        logger.info("WebSocket connection closed")
+        logger.info("🔌 WebSocket closed")
 
 
 def perform_cluster_check_once():

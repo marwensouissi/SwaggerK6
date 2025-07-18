@@ -3,6 +3,8 @@ import PropTypes from "prop-types"
 import SwaggerUpload from "../components/SwaggerUpload"
 import { checkIfSwaggerExists } from "../../services/swaggerService"
 import AddUserModal from "./add_user"
+import { TiUserAdd } from "react-icons/ti";
+
 
 // K6 predefined functions list
 const k6Functions = [
@@ -468,8 +470,10 @@ class App extends React.Component {
               onClick={() => this.setState({ showAddUserModal: true })}
               style={{ cursor: "pointer", display: "flex", alignItems: "center" }}
             >
-              <span role="img" aria-label="add user" style={{ marginRight: "4px" }}>👤</span>
-              Add User
+              {/* <span role="img" aria-label="add user" style={{ marginRight: "4px" }}>👤</span> */}
+              {/* Add User */}
+              <TiUserAdd />
+
             </span>
           </div>
         </>
