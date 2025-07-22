@@ -1,0 +1,14 @@
+apiVersion: k6.io/v1alpha1
+kind: TestRun
+metadata:
+  name: swagger-a390c505-test
+spec:
+  parallelism: 1
+    script:
+      configMap:
+        name: swagger-a390c505-test
+        file: swagger-a390c505-test.tar
+    runner:
+      env:
+        - name: K6_WEB_DASHBOARD
+          value: "true"
