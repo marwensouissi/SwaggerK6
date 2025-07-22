@@ -108,7 +108,10 @@ def generate_test_file(
         generated_dir = Path(__file__).resolve().parent.parent / "generated"
         generated_dir.mkdir(parents=True, exist_ok=True)
         unique_id = uuid.uuid4().hex[:8]
-        output_filename = f"{Path(request.swagger_filename).stem}_{unique_id}_test.js"
+
+        stem = Path(request.swagger_filename).stem.replace("_", "-")
+        output_filename = f"{stem}-{unique_id}-test.js"
+        
         output_path = generated_dir / output_filename
  
         with output_path.open("w", encoding="utf-8") as f:

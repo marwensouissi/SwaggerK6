@@ -64,7 +64,7 @@ def generate_mqtt_test(
         generated_dir = Path(__file__).resolve().parent.parent / "generated"
         generated_dir.mkdir(parents=True, exist_ok=True)
         unique_id = uuid.uuid4().hex[:8]
-        filename = f"mqtt_{unique_id}_test.js"
+        filename = f"mqtt-{unique_id}-test.js"
         output_path = generated_dir / filename
 
         with output_path.open("w", encoding="utf-8") as f:
