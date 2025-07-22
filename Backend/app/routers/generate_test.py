@@ -176,15 +176,15 @@ kind: TestRun
 metadata:
   name: {name}
 spec:
-    parallelism: 1
+  parallelism: 1
     script:
-        configMap:
-            name: {name}
-            file: {name}.tar
+      configMap:
+        name: {name}
+        file: {name}.tar
     runner:
-        env:
+      env:
         - name: K6_WEB_DASHBOARD
-            value: "true"
+          value: "true"
 
 """.strip()
 
