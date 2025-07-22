@@ -43,11 +43,8 @@ async def create_admin_user():
         )
         db.add(new_user)
         db.commit()
-        print("✅ Admin user created with role=admin")
      # Trigger cluster check once and cache the result
-    loop = asyncio.get_event_loop()
     # Run blocking function in executor to avoid blocking event loop
-    await loop.run_in_executor(None, jenkins.perform_cluster_check_once)
 
 app.add_middleware(
     CORSMiddleware,

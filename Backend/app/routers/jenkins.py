@@ -148,6 +148,7 @@ async def run_k6_test_websocket(websocket: WebSocket):
             "CLUSTER_NAME": data.get("cluster_name", "my-k6-cluster"),
             "NODE_SIZE": data.get("node_size", "s-2vcpu-4gb"),
         }
+        
     except Exception as e:
         await websocket.send_text(f"❌ Invalid payload: {e}")
         return await websocket.close()
@@ -196,11 +197,7 @@ async def run_k6_test_websocket(websocket: WebSocket):
                 console_offset = int(log_resp.headers.get("X-Text-Size", console_offset))
 
                 # Extract IPs if not already found
-                if not found_argocd_ip:
-                    argocd_match = re.search(r"ARGOCD_SERVER=([\d.]+)", log_text)
-                    if argocd_match:
-                        found_argocd_ip = argocd_match.group(1)
-                        await websocket.send_text(f"🌐 ArgoCD IP: {found_argocd_ip}")
+
 
                 if not found_loki_ip:
                     loki_match = re.search(r"LOKI_SERVER=([\d.]+)", log_text)
@@ -218,6 +215,13 @@ async def run_k6_test_websocket(websocket: WebSocket):
         # Final status
         if status == "SUCCESS":
             await websocket.send_text("✅ SUCCESS")
+
+            # ✅ Update cluster existence status
+            cluster_status_cache.update({
+                "cluster_exists": True,
+                "job_number": build_number,
+                "note": "Cluster deployed via WebSocket"
+            })
         else:
             await websocket.send_text(f"❌ {status}")
 
@@ -302,10 +306,46 @@ def perform_cluster_check_once():
 
 
 @router.get("/check")
-def get_cached_cluster_status():
-    # Return the cached cluster existence status
-    return JSONResponse(content=cluster_status_cache)
+def get_or_trigger_cluster():
+    # Step 1: Perform initial check if never checked
+    if cluster_status_cache["cluster_exists"] is None:
+        perform_cluster_check_once()
 
+    # Step 2: If no cluster found, trigger creation
+    if cluster_status_cache["cluster_exists"] is False:
+        auth = (USERNAME, API_TOKEN)
+        trigger_url = f"{JENKINS_URL}{JENKINS_JOB_PATH}/buildWithParameters"
+        params = {
+            "token": TRIGGER_TOKEN,
+            "REGION": "fra1",  # Or dynamic based on app config
+            "CLUSTER_NAME": "my-k6-cluster",
+            "NODE_SIZE": "s-2vcpu-4gb"
+        }
+
+        try:
+            resp = requests.post(trigger_url, params=params, auth=auth, allow_redirects=False)
+            if resp.status_code != 201:
+                return JSONResponse(
+                    content={"status": "error", "message": f"Failed to trigger cluster build: {resp.status_code}"}
+                )
+
+            cluster_status_cache.update({
+                "cluster_exists": True,  # Optimistically assume creation started
+                "job_number": None,
+                "note": "Cluster creation triggered"
+            })
+
+            return JSONResponse(content={"status": "triggered", "message": "Cluster creation pipeline started"})
+
+        except Exception as e:
+            return JSONResponse(content={"status": "error", "message": str(e)})
+
+    # Step 3: If already exists or pending
+    return JSONResponse(content={
+        "status": "exists",
+        "cluster_exists": cluster_status_cache["cluster_exists"],
+        "note": cluster_status_cache["note"]
+    })
 
 @router.post("/destroy")
 async def destroy_cluster():
