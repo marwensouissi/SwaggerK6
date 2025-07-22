@@ -1,0 +1,12 @@
+apiVersion: k6.io/v1alpha1
+kind: TestRun
+metadata:
+  name: swagger-985e2dad-test
+  namespace: default
+spec:
+  script:
+    archive:
+      configMap:
+        name: swagger-985e2dad-test
+        file: archive.tar
+  parallelism: 1
