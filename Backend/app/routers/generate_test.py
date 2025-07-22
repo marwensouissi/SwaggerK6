@@ -175,14 +175,17 @@ apiVersion: k6.io/v1alpha1
 kind: TestRun
 metadata:
   name: {name}
-  namespace: {namespace}
 spec:
-  script:
-    archive:
-      configMap:
-        name: {name}
-        file: {name}.tar
-  parallelism: 1
+    parallelism: 1
+    script:
+        configMap:
+            name: {name}
+            file: {name}.tar
+    runner:
+        env:
+        - name: K6_WEB_DASHBOARD
+            value: "true"
+
 """.strip()
 
 
