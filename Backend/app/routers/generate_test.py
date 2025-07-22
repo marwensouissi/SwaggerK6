@@ -111,7 +111,7 @@ def generate_test_file(
 
         stem = Path(request.swagger_filename).stem.replace("_", "-")
         output_filename = f"{stem}-{unique_id}-test.js"
-        
+
         output_path = generated_dir / output_filename
  
         with output_path.open("w", encoding="utf-8") as f:
@@ -181,7 +181,7 @@ spec:
     archive:
       configMap:
         name: {name}
-        file: archive.tar
+        file: {name}.tar
   parallelism: 1
 """.strip()
 
