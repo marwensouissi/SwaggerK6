@@ -14,6 +14,7 @@ import uuid
 import logging
 import json
 import subprocess
+import base64
 import tarfile
 import shutil
 from datetime import datetime
@@ -153,11 +154,13 @@ def k6_archive(js_file_path: Path, output_dir: Path) -> Path:
 
     default_tar.rename(renamed_tar)
 
-    return renamed_tar, renamed_tar.parent
+    return renamed_tar, renamed_tar.parent  
 
 
 def generate_configmap_yaml(tar_file_path: Path, namespace: str = "default") -> str:
     name = tar_file_path.stem
+    encoded_content = base64.b64encode(tar_file_path.read_bytes()).decode()
+
     return f"""
 apiVersion: v1
 kind: ConfigMap
@@ -165,7 +168,7 @@ metadata:
   name: {name}
   namespace: {namespace}
 binaryData:
-  archive.tar: {tar_file_path.read_bytes().hex()}
+  {name}.tar: {encoded_content}
 """.strip()
 
 

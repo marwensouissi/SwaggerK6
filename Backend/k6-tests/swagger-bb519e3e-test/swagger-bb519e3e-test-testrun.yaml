@@ -1,0 +1,15 @@
+apiVersion: k6.io/v1alpha1
+kind: TestRun
+metadata:
+  name: swagger-bb519e3e-test
+  namespace: default
+spec:
+  parallelism: 1
+  script:
+    configMap:
+      name: swagger-bb519e3e-test
+      file: swagger-bb519e3e-test.tar
+  runner:
+    env:
+      - name: K6_WEB_DASHBOARD
+        value: "true"
