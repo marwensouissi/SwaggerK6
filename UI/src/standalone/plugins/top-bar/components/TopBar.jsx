@@ -4,7 +4,7 @@ import {parseSearch, serializeSearch} from "core/utils"
 import Upload from "core/components/Upload"
 import { color } from "framer-motion"
 import { MdDriveFolderUpload } from "react-icons/md";
-import { FaUpload } from "react-icons/fa";
+import { FaUpload, FaTrash } from "react-icons/fa";
 
 
 import ListSelectedApis from "../../../../core/components/list-selected-apis"; // Corrected path to match the actual file structure
@@ -67,6 +67,57 @@ flushAuthData() {
     })
   }
 
+deleteSpec = async () => {
+  const allSpecs = [...(this.props.getConfigs().urls || []), ...this.state.customSpecs, ...this.state.uploadedSpecs];
+  const currentSpec = allSpecs[this.state.selectedIndex];
+  
+  if (!currentSpec) return;
+  
+  // Only allow deletion of uploaded specs (not default URLs)
+  const canDelete = currentSpec.filename || this.state.customSpecs.some(cs => cs.url === currentSpec.url);
+  
+  if (!canDelete) {
+    alert("Cannot delete default API specifications.");
+    return;
+  }
+
+  try {
+    // If it's an uploaded spec, delete from server
+    if (currentSpec.filename) {
+      const response = await fetch(`http://localhost:6060/swagger/delete-json/${currentSpec.filename}`, {
+        method: 'DELETE'
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to delete file from server');
+      }
+    }
+    
+    // Remove from state
+    this.setState(prev => ({
+      customSpecs: prev.customSpecs.filter(spec => spec.url !== currentSpec.url),
+      uploadedSpecs: prev.uploadedSpecs.filter(spec => spec.url !== currentSpec.url)
+    }));
+    
+    // Refresh the list
+    this.fetchUploadedSpecs();
+    
+    // Switch to first available spec
+    const configs = this.props.getConfigs();
+    const urls = configs.urls || [];
+    if (urls.length > 0) {
+      this.setState({ selectedIndex: 0 });
+      this.loadSpec(urls[0].url);
+    }
+    
+    // Open upload modal after successful deletion
+    this.setState({ showUploadModal: true });
+    
+  } catch (error) {
+    console.error('Error deleting spec:', error);
+    alert('Failed to delete file: ' + error.message);
+  }
+}
 
  async fetchUploadedSpecs() {
   try {
@@ -106,13 +157,15 @@ flushAuthData() {
 }
 
 
+
+
   loadSpec = (url) => {
     this.flushAuthData()
     this.props.specActions.updateUrl(url)
     this.props.specActions.download(url)
   }
 
-  onUrlSelect = (e) => {
+  onUrlSelect = (e) => {  
   let url = e.target.value || e.target.href;
   
   // Check if this is a custom uploaded spec
@@ -252,22 +305,14 @@ getCurrentSwaggerFilename() {
 
 
    const renderUploadModal = () => {
-      if (Modal) {
-        return (
-          <Modal title="Upload API Specification" onClose={this.toggleUploadModal}>
-            <Upload onSuccess={this.handleUploadSuccess} />
-          </Modal>
-        )
-      }
-      return this.state.showUploadModal && (
-        <div className="upload-modal-overlay">
-          <div className="upload-modal">
-            <button onClick={this.toggleUploadModal} className="close-btn">x</button>
-            <Upload onSuccess={this.handleUploadSuccess} />
-          </div>
-        </div>
-      )
-    }
+  return (
+    <Upload 
+      isOpen={this.state.showUploadModal}
+      onClose={this.toggleUploadModal}
+      onSuccess={this.handleUploadSuccess}
+    />
+  )
+}
         const swaggerFilename = this.getCurrentSwaggerFilename();
 
 console.log("Passing swaggerFilename to ListSelectedApis:", swaggerFilename);
@@ -279,29 +324,34 @@ console.log("Passing swaggerFilename to ListSelectedApis:", swaggerFilename);
 const allSpecs = [...(urls || []), ...this.state.customSpecs, ...this.state.uploadedSpecs];
 
 if (allSpecs.length) {
-  const options = allSpecs.map((link, i) => (
-    <option
-      key={i}
-      value={link.url}
-      style={{ color: "#000", backgroundColor: "#fff" }}
-    >
-      {link.name || link.url}
-    </option>
-  ));
-
-  control.push(
-    <label className="select-label" htmlFor="select">
-      <span>Select a definition</span>
-      <select
-        id="select"
-        disabled={isLoading}
-        onChange={this.onUrlSelect}
-        value={allSpecs[this.state.selectedIndex]?.url}
-      >
-        {options}
-      </select>
-    </label>
+  // Simplified dropdown without delete buttons
+  const customDropdown = (
+    <div className="custom-dropdown-container">
+      <label className="select-label" htmlFor="select">
+        <span>Select a definition</span>
+        <div className="custom-select-wrapper">
+          <select
+            id="select"
+            disabled={isLoading}
+            onChange={this.onUrlSelect}
+            value={allSpecs[this.state.selectedIndex]?.url}
+          >
+            {allSpecs.map((link, i) => (
+              <option
+                key={i}
+                value={link.url}
+                style={{ color: "#000", backgroundColor: "#fff" }}
+              >
+                {link.name || link.url}
+              </option>
+            ))}
+          </select>
+        </div>
+      </label>
+    </div>
   );
+
+  control.push(customDropdown);
 }
 
   const servers = specSelectors.servers()
@@ -324,16 +374,37 @@ if (allSpecs.length) {
                 {control.map((el, i) => cloneElement(el, { key: i }))}
               </form>
               
-              {/* Add Upload button next to the dropdown */}
+              {/* Delete button for current selected file */}
+              {(() => {
+                const allSpecs = [...(urls || []), ...this.state.customSpecs, ...this.state.uploadedSpecs];
+                const currentSpec = allSpecs[this.state.selectedIndex];
+                const canDelete = currentSpec?.filename || this.state.customSpecs.some(cs => cs.url === currentSpec?.url);
+                
+                if (canDelete) {
+                  return (
+                    <Button 
+                      className="delete-btn"
+                      onClick={() => {
+                        if (window.confirm(`Are you sure you want to delete "${currentSpec.name || currentSpec.filename}"?`)) {
+                          this.deleteSpec();
+                        }
+                      }}
+                      title={`Delete ${currentSpec.name || currentSpec.filename}`}
+                    > 
+                      <FaTrash />
+                    </Button>
+                  );
+                }
+                return null;
+              })()}
+              
+              {/* Upload button */}
               <Button 
-                className="upload-btn "
+                className="upload-btn"
                 onClick={this.toggleUploadModal}
               > 
                 <FaUpload />
-
                 Upload JSON
-
-
               </Button>
             </div>
 
@@ -361,25 +432,62 @@ if (allSpecs.length) {
 
 
 const styles = `
+  .swagger-ui .delete-btn {
+    background: linear-gradient(135deg,rgb(231, 32, 14), rgb(102, 63, 37)) !important;
+    color: white !important;
+    border: none;
+    border-radius: 5px;
+    padding: 8px;
+  
+  }
+
+
+
+
+  .swagger-ui .upload-btn {
+    background: linear-gradient(135deg, #354a72, rgb(24, 47, 92)) !important;
+  }
+
+  .swagger-ui .upload-btn > svg {
+    margin-right: 3px;
+  }
+
+    .swagger-ui .delete-btn > svg {
+    margin: 0px 3px;
+  }
+
+  .controls-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .custom-dropdown-container {
+    position: relative;
+  }
+
+  .custom-select-wrapper {
+    position: relative;
+    display: inline-block;
+  }
+
   .upload-modal-overlay {
     position: fixed;
     top: 0;
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(0,0,0,0.5);
+    background: rgba(189, 187, 187, 0.95);
     display: flex;
     justify-content: center;
     align-items: center;
     z-index: 1000;
   }
 
-  
-  
   .upload-modal {
     border-radius: 4px;
     height: 40%;
-    margin-bottom:15%;
+    margin-bottom: 15%;
     width: 60%;
   }
 
@@ -401,21 +509,6 @@ const styles = `
   .mqtt-btn:disabled {
     background-color: #cccccc !important;
     cursor: not-allowed;
-  }
-    .swagger-ui .upload-btn {
-    background: linear-gradient(135deg, #354a72,rgb(24, 47, 92))
-
-}
-
-    .swagger-ui .upload-btn > svg{
- 
-  margin-right: 8px; /* Adjust this value as needed */
-}
-
-  .controls-wrapper {
-    display: flex;
-    align-items: center;
-    gap: 10px;
   }
 `
 

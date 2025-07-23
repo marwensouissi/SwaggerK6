@@ -4,9 +4,32 @@ import { removeApiEntry } from '../plugins/oas3/actions';
 import LaunchTestModal from './LaunchTestModal';
 import ChooseExecutionOption from './ChooseExecutionOption';
 
+
+const STORAGE_KEY = 'selectedApis';
+
+
 const HTTP_METHODS = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'];
 
-const ListSelectedApis = ({ swaggerFilename }) => {
+
+const saveToLocalStorage = (apiData) => {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(apiData));
+  } catch (error) {
+    console.error('Error saving to localStorage:', error);
+  }
+};
+
+const loadFromLocalStorage = () => {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    return saved ? JSON.parse(saved) : [];
+  } catch (error) {
+    console.error('Error loading from localStorage:', error);
+    return [];
+  }
+};
+
+const ListSelectedApis = ({ swaggerFilename, clearApiList, onApiListCleared }) => {
   console.log("[ListSelectedApis] swaggerFilename:", swaggerFilename); // Debug
 const [hasToken, setHasToken] = useState(false);
 
@@ -21,12 +44,15 @@ const [hasToken, setHasToken] = useState(false);
   // Token modal state
   const [isTokenModalOpen, setTokenModalOpen] = useState(false);
   const [tokenInput, setTokenInput] = useState('');
+  const [savedApiData, setSavedApiData] = useState([]);
 
   // Initialize token from session storage
   useEffect(() => {
     const token = sessionStorage.getItem('authToken') || '';
     setTokenInput("");
     setHasToken(false);
+    const savedData = loadFromLocalStorage();
+    setSavedApiData(savedData);
 
   }, []);
 
@@ -217,6 +243,7 @@ const handleLaunchTest = async (stages) => {
   }
 };
 
+
   const getMethodColor = (method) => {
     switch (method.toLowerCase()) {
       case 'get': return '#28a745';
@@ -233,6 +260,7 @@ const handleLaunchTest = async (stages) => {
   const [mqttStatus, setMqttStatus] = useState({});
   const [isCheckingMqtt, setIsCheckingMqtt] = useState({});
 
+  
   // Fetch MQTT injection status for each MQTT API entry
   useEffect(() => {
     const fetchStatuses = async () => {
@@ -292,6 +320,24 @@ const getFileName = (filePath) => {
   if (!filePath) return '';
   return filePath.split(/[/\\]/).pop();
 };
+
+  // Handle clearing API list when clearApiList prop is true
+  useEffect(() => {
+    if (clearApiList) {
+      // Clear localStorage
+      localStorage.removeItem(STORAGE_KEY);
+      // Clear saved API data in state
+      setSavedApiData([]);
+      // Clear Redux data by dispatching remove actions for all APIs
+      savedApiData.forEach(({ api, method }) => {
+        dispatch(removeApiEntry(api, method.toLowerCase()));
+      });
+      // Notify parent that clearing is complete
+      if (onApiListCleared) {
+        onApiListCleared();
+      }
+    }
+  }, [clearApiList, savedApiData, dispatch, onApiListCleared]);
 
   return (
     <div style={{

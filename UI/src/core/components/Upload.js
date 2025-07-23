@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 
-const Upload = ({ onSuccess }) => {
+const Upload = ({ onSuccess, isOpen, onClose }) => {
   const [error, setError] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
 
@@ -46,12 +46,17 @@ const Upload = ({ onSuccess }) => {
     setIsDragging(false);
   };
 
+  const handleBackdropClick = (e) => {
+    if (e.target === e.currentTarget) {
+      onClose();
+    }
+  };
+
+  if (!isOpen) return null;
+
   return (
     <div
-      onDragOver={(e) => e.preventDefault()}
-      onDrop={handleFileDrop}
-      onDragEnter={handleDragEnter}
-      onDragLeave={handleDragLeave}
+      onClick={handleBackdropClick}
       style={{
         position: 'fixed',
         top: 0,
@@ -61,9 +66,8 @@ const Upload = ({ onSuccess }) => {
         display: "flex",
         justifyContent: "center",
         alignItems: "center",
-        backgroundColor: "#090D2B",
+        backdropFilter: "blur(4px)",
         color: "#fff",
-        flexDirection: "column",
         fontFamily: "'Segoe UI', sans-serif",
         overflow: "hidden",
         zIndex: 1000,
@@ -101,19 +105,50 @@ const Upload = ({ onSuccess }) => {
         animation: "float 18s infinite linear",
       }} />
 
-      {/* Main content */}
-      <div style={{
-        position: "relative",
-        zIndex: 2,
-        padding: "40px",
-        borderRadius: "16px",
-        backgroundColor: isDragging ? "rgba(255, 255, 255, 0.05)" : "rgba(255, 255, 255, 0.03)",
-        border: isDragging ? "2px dashed #84BD00" : "2px dashed rgba(255, 255, 255, 0.2)",
-        transition: "all 0.3s ease",
-        textAlign: "center",
-        maxWidth: "500px",
-        width: "90%",
-      }}>
+      {/* Modal content */}
+      <div 
+        onDragOver={(e) => e.preventDefault()}
+        onDrop={handleFileDrop}
+        onDragEnter={handleDragEnter}
+        onDragLeave={handleDragLeave}
+        style={{
+          position: "relative",
+          zIndex: 2,
+          padding: "40px",
+          borderRadius: "16px",
+          backgroundColor: isDragging ? "rgba(255, 255, 255, 0.05)" : "rgba(9, 13, 43, 0.95)",
+          border: isDragging ? "2px dashed #84BD00" : "2px dashed rgba(255, 255, 255, 0.2)",
+          transition: "all 0.3s ease",
+          textAlign: "center",
+          maxWidth: "500px",
+          width: "90%",
+          maxHeight: "80vh",
+          overflow: "auto",
+          boxShadow: "0 20px 40px rgba(0, 0, 0, 0.3)",
+        }}
+      >
+        {/* Close button */}
+        <button
+          onClick={onClose}
+          style={{
+            position: "absolute",
+            top: "16px",
+            right: "16px",
+            background: "none",
+            border: "none",
+            color: "rgba(255, 255, 255, 0.7)",
+            fontSize: "24px",
+            cursor: "pointer",
+            padding: "4px",
+            borderRadius: "4px",
+            transition: "color 0.2s ease",
+          }}
+          onMouseEnter={(e) => e.target.style.color = "#fff"}
+          onMouseLeave={(e) => e.target.style.color = "rgba(255, 255, 255, 0.7)"}
+        >
+          ×
+        </button>
+
         <h2 style={{ 
           marginBottom: "16px", 
           fontWeight: 600,
@@ -144,10 +179,6 @@ const Upload = ({ onSuccess }) => {
           cursor: "pointer",
           fontWeight: 600,
           transition: "all 0.2s ease",
-          ":hover": {
-            transform: "translateY(-2px)",
-            boxShadow: "0 4px 12px rgba(132, 189, 0, 0.3)"
-          }
         }}>
           Browse Files
           <input 
@@ -160,7 +191,7 @@ const Upload = ({ onSuccess }) => {
         
         {error && (
           <p style={{ 
-            color: "#FF3B30", 
+            color: "#fffff", 
             marginTop: "16px",
             padding: "8px 12px",
             background: "rgba(255, 59, 48, 0.1)",
