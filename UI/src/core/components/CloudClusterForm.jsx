@@ -4,7 +4,7 @@ import { FaCloud, FaArrowLeft } from 'react-icons/fa';
 import tf from '../../core/assets/tf.png';  
 import digitalOceanLogo from '../../core/assets/png-transparent-digitalocean-hd-logo-thumbnail.png';
 
-const CloudClusterForm = ({ onBack }) => {
+const CloudClusterForm = ({ onBack, filename }) => { // <-- include filename
   const [region, setRegion] = useState('fra1');
   const [clusterName, setClusterName] = useState('my-k6-cluster');
   const [nodeSize, setNodeSize] = useState('s-2vcpu-4gb');
@@ -30,19 +30,42 @@ const [isDeployed, setIsDeployed] = useState(false);
         action, 
         region, 
         cluster_name: clusterName, 
-        node_size: nodeSize 
+        node_size: nodeSize,
+        filename 
       };
       ws.send(JSON.stringify(payload));
       setStatusMessages((prev) => [...prev, `🔌 Connected to WebSocket. Starting ${action}...`]);
     };
 
 ws.onmessage = (event) => {
+    const message = event.data;
+
   setStatusMessages((prev) => {
     if (prev[prev.length - 1] !== event.data) {
       return [...prev, event.data];
     }
     return prev;
   });
+    if (message.includes("Loki IP")) {
+    const match = message.match(/Loki IP:\s*([\d.]+)/);
+    if (match && match[1]) {
+      localStorage.setItem("loki_ip", match[1]);
+      console.log("Saved Loki IP to localStorage:", match[1]);
+      
+      fetch(`http://localhost:6060/generate/archive-and-push?filename=${filename}`, {
+      method: "POST",
+      headers: {
+         "Content-Type": "application/json",
+          'Authorization': `Bearer ${sessionStorage.getItem('authToken')}`,
+      }
+    })    .then(data => {
+      console.log("📦 Archive & push success:", data);
+    })
+    .catch(error => {
+      console.error("⚠️ Error during archive push:", error);
+    });
+    }
+  }
     if (event.data.includes("Cluster deployment complete")) {
     setIsDeployed(true);
     setIsSubmitting(false);  // stop spinner

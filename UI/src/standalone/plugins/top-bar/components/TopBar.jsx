@@ -301,7 +301,7 @@ if (allSpecs.length) {
         {options}
       </select>
     </label>
-  );
+  );  
 }
 
   const servers = specSelectors.servers()

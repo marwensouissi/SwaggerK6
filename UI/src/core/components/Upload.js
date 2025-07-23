@@ -61,7 +61,7 @@ const Upload = ({ onSuccess }) => {
         display: "flex",
         justifyContent: "center",
         alignItems: "center",
-        backgroundColor: "#090D2B",
+        background: "linear-gradient(145deg,rgb(45, 55, 75), #0d1117)",
         color: "#fff",
         flexDirection: "column",
         fontFamily: "'Segoe UI', sans-serif",

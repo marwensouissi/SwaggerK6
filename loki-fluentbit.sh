@@ -5,8 +5,8 @@ set -e
 cd /private/var/jenkins/workspace/DevOps/K6/cluster-builder-k6
 export KUBECONFIG="$(pwd)/kubeconfig_do.yaml"
 
-
 ls 
+
 # Variables
 NAMESPACE="observability"
 LOKI_RELEASE_NAME="loki"
@@ -28,12 +28,12 @@ helm upgrade --install $LOKI_RELEASE_NAME grafana/loki-stack \
   --set loki.service.type=LoadBalancer \
   --set promtail.enabled=false
 
-echo "📦 Installing Fluent Bit with custom config..."
+echo "✏️ Applying Fluent Bit config directly to 'fluent-bit' ConfigMap..."
 cat <<EOF | kubectl apply -f -
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: fluent-bit-custom-config
+  name: fluent-bit
   namespace: $NAMESPACE
 data:
   fluent-bit.conf: |
@@ -97,7 +97,7 @@ data:
     }
 EOF
 
+echo "🚀 Installing Fluent Bit with built-in config (from ConfigMap named 'fluent-bit')..."
 helm upgrade --install $FLUENT_BIT_RELEASE_NAME fluent/fluent-bit \
   --namespace $NAMESPACE \
-  --set config.existingConfigMap=fluent-bit-custom-config
-
+  --set config.existingConfigMap=fluent-bit

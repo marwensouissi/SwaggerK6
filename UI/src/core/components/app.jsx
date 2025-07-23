@@ -4,6 +4,7 @@ import SwaggerUpload from "../components/SwaggerUpload"
 import { checkIfSwaggerExists } from "../../services/swaggerService"
 import AddUserModal from "./add_user"
 import { TiUserAdd } from "react-icons/ti";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 
 
 // K6 predefined functions list
@@ -14,6 +15,7 @@ const k6Functions = [
   { name: "sleep(seconds)", description: "Pauses execution for the given duration." },
   { name: "group(name, function)", description: "Groups test logic together." },
 ]
+
 
 class App extends React.Component {
   constructor(props) {
@@ -39,67 +41,35 @@ class App extends React.Component {
 
   
  async componentDidMount() {
-    const exists = await checkIfSwaggerExists()
-    const savedToken = sessionStorage.getItem("authToken")
-    const savedRole = sessionStorage.getItem("role")
-
-    if (exists) {
-      if (savedToken && this.props.system?.authActions?.authorize) {
-        this.props.system.authActions.authorize({
-          apiKey: {
-            name: "Authorization",
-            schema: {
-              type: "apiKey",
-              in: "header",
-              name: "Authorization",
-            },
-            value: `Bearer ${savedToken}`,
-          },
-        })
+    // Cluster check logic
+    const storedCluster = localStorage.getItem("cluster");
+    let clusterStatus = null;
+    if (!storedCluster) {
+      try {
+        const res = await fetch("http://localhost:6060/jenkins/check");
+        const data = await res.json();
+        if (data.status === "triggered") {
+          localStorage.setItem("cluster", "creating");
+          clusterStatus = "off";
+        } else if (data.status === "exists") {
+          localStorage.setItem("cluster", "ready");
+          clusterStatus = "on";
+        } else {
+          clusterStatus = "off";
+        }
+      } catch (err) {
+        console.error("Check error:", err);
+        clusterStatus = "off";
       }
-      this.setState({
-        isSwaggerChecked: true,
-        isSwaggerReady: true,
-        isLoggedIn: !!savedToken,
-        token: savedToken,
-        role: savedRole,
-
-      })
     } else {
-      this.setState({
-        isSwaggerChecked: true,
-        isSwaggerReady: false,
-        isLoggedIn: !!savedToken,
-        token: savedToken,
-        role: savedRole,
-
-      })
+      // Use storedCluster value to set status
+      clusterStatus = storedCluster === "ready" ? "on" : "off";
     }
-  }
 
-  async fetchClusterStatus() {
-    try {
-      const response = await fetch("http://localhost:6060/jenkins/check");
-      const data = await response.json();
-      
-      if (data.cluster_exists === true) {
-        this.setState({ clusterStatus: "on" });
-      } else if (data.cluster_exists === false) {
-        this.setState({ clusterStatus: "off" });
-      } else {
-        this.setState({ clusterStatus: "unknown" });
-      }
-    } catch (error) {
-      console.error("Error fetching cluster status:", error);
-      this.setState({ clusterStatus: "unknown" });
-    }
-  }
-  
-  async componentDidMount() {
     const exists = await checkIfSwaggerExists();
     const savedToken = sessionStorage.getItem("authToken");
     const savedRole = sessionStorage.getItem("role");
-  
+
     if (savedToken && this.props.system?.authActions?.authorize) {
       this.props.system.authActions.authorize({
         apiKey: {
@@ -113,15 +83,14 @@ class App extends React.Component {
         },
       });
     }
-  
-    await this.fetchClusterStatus(); // ⬅️ Call the fetch here
-  
+
     this.setState({
       isSwaggerChecked: true,
       isSwaggerReady: exists,
       isLoggedIn: !!savedToken,
       token: savedToken,
       role: savedRole,
+      clusterStatus // <-- set clusterStatus for UI
     });
   }
   
@@ -422,29 +391,29 @@ class App extends React.Component {
     }}>
          
       {/* Cluster Status */}
- <div style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "8px",
-            padding: "8px 16px",
-            borderRadius: "6px",
-            backgroundColor: "rgb(83 16 16 / 10%)"
-          }}>
-            <div style={{
-              width: "10px",
-              height: "10px",
-              borderRadius: "50%",
-              backgroundColor: this.state.clusterStatus === "on" ? "#52c41a" : "#ff4d4f",
-              boxShadow: this.state.clusterStatus === "on" ? "0 0 8px #52c41a" : "0 0 8px #ff4d4f"
-            }} />
-            <span>Cluster: </span>
-            <span style={{
-              color: this.state.clusterStatus === "on" ? "#52c41a" : "#ff4d4f",
-              fontWeight: "bold"
-            }}>
-              {this.state.clusterStatus === "on" ? "ONLINE" : "OFFLINE"}
-            </span>
-          </div>
+<div style={{
+  display: "flex",
+  alignItems: "center",
+  gap: "8px",
+  padding: "8px 16px",
+  borderRadius: "6px",
+  backgroundColor: this.state.clusterStatus === "on" ? "rgb(34 200 49 / 10%)" : "rgb(83 16 16 / 10%)"
+}}>
+  <div style={{
+    width: "10px",
+    height: "10px",
+    borderRadius: "50%",
+    backgroundColor: this.state.clusterStatus === "on" ? "#52c41a" : "#ff4d4f",
+    boxShadow: this.state.clusterStatus === "on" ? "0 0 8px #52c41a" : "0 0 8px #ff4d4f"
+  }} />
+  <span>Cluster: </span>
+  <span style={{
+    color: this.state.clusterStatus === "on" ? "#52c41a" : "#ff4d4f", 
+    fontWeight: "bold"
+  }}>
+    {this.state.clusterStatus === "on" ? "ONLINE" : "OFFLINE"}
+  </span>
+</div>
 
       <span>|</span>
       {/* K6 Functions Link */}
