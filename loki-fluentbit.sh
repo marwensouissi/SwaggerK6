@@ -5,8 +5,8 @@ set -e
 cd /private/var/jenkins/workspace/DevOps/K6/cluster-builder-k6
 export KUBECONFIG="$(pwd)/kubeconfig_do.yaml"
 
-ls 
 
+ls 
 # Variables
 NAMESPACE="observability"
 LOKI_RELEASE_NAME="loki"
@@ -28,16 +28,12 @@ helm upgrade --install $LOKI_RELEASE_NAME grafana/loki-stack \
   --set loki.service.type=LoadBalancer \
   --set promtail.enabled=false
 
-echo "📦 Installing Fluent Bit..."
-helm upgrade --install $FLUENT_BIT_RELEASE_NAME fluent/fluent-bit \
-  --namespace $NAMESPACE
-
-echo "✏️ Updating ConfigMap fluent-bit..."
+echo "📦 Installing Fluent Bit with custom config..."
 cat <<EOF | kubectl apply -f -
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: fluent-bit
+  name: fluent-bit-custom-config
   namespace: $NAMESPACE
 data:
   fluent-bit.conf: |
@@ -101,17 +97,7 @@ data:
     }
 EOF
 
-echo "♻️ Restarting Fluent Bit pods to apply updated ConfigMap..."
+# helm upgrade --install $FLUENT_BIT_RELEASE_NAME fluent/fluent-bit \
+#   --namespace $NAMESPACE \
+#   --set config.existingConfigMap=fluent-bit-custom-config
 
-helm upgrade --install fluent-bit fluent/fluent-bit \
-  --namespace observability \
-  --set config.existingConfigMap=fluent-bit \
-  --set config.customParsers="" \
-  --set config.filters="" \
-  --set config.outputs="" \
-  --set config.inputs="" \
-  --set config.service="" \
-  --set volumeMounts[0].mountPath="/run/fluent-bit" \
-  --set volumeMounts[0].name="fluentbit-db" \
-  --set volumes[0].name="fluentbit-db" \
-  --set volumes[0].emptyDir={}
