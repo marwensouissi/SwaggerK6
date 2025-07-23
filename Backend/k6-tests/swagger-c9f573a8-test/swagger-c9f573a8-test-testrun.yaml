@@ -1,0 +1,14 @@
+apiVersion: k6.io/v1alpha1
+kind: TestRun
+metadata:
+  name: swagger-c9f573a8-test
+spec:
+  parallelism: 1
+    script:
+      configMap:
+        name: swagger-c9f573a8-test
+        file: swagger-c9f573a8-test.tar
+    runner:
+      env:
+        - name: K6_WEB_DASHBOARD
+          value: "true"
