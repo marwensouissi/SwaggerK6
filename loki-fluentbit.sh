@@ -5,8 +5,8 @@ set -e
 cd /private/var/jenkins/workspace/DevOps/K6/cluster-builder-k6
 export KUBECONFIG="$(pwd)/kubeconfig_do.yaml"
 
-
 ls 
+
 # Variables
 NAMESPACE="observability"
 LOKI_RELEASE_NAME="loki"
@@ -28,12 +28,16 @@ helm upgrade --install $LOKI_RELEASE_NAME grafana/loki-stack \
   --set loki.service.type=LoadBalancer \
   --set promtail.enabled=false
 
-echo "📦 Installing Fluent Bit with custom config..."
+echo "📦 Installing Fluent Bit..."
+helm upgrade --install $FLUENT_BIT_RELEASE_NAME fluent/fluent-bit \
+  --namespace $NAMESPACE
+
+echo "✏️ Updating ConfigMap fluent-bit..."
 cat <<EOF | kubectl apply -f -
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: fluent-bit-custom-config
+  name: fluent-bit
   namespace: $NAMESPACE
 data:
   fluent-bit.conf: |
@@ -97,7 +101,14 @@ data:
     }
 EOF
 
-helm upgrade --install $FLUENT_BIT_RELEASE_NAME fluent/fluent-bit \
-  --namespace $NAMESPACE \
-  --set config.existingConfigMap=fluent-bit-custom-config
+echo "♻️ Restarting Fluent Bit pods to apply updated ConfigMap..."
 
+# Auto-detect whether it's a DaemonSet or Deployment
+if kubectl get daemonset "$FLUENT_BIT_RELEASE_NAME" -n "$NAMESPACE" &>/dev/null; then
+  kubectl rollout restart daemonset/$FLUENT_BIT_RELEASE_NAME -n $NAMESPACE
+elif kubectl get deployment "$FLUENT_BIT_RELEASE_NAME" -n "$NAMESPACE" &>/dev/null; then
+  kubectl rollout restart deployment/$FLUENT_BIT_RELEASE_NAME -n $NAMESPACE
+else
+  echo "❌ Could not find DaemonSet or Deployment named $FLUENT_BIT_RELEASE_NAME in namespace $NAMESPACE"
+  exit 1
+fi
