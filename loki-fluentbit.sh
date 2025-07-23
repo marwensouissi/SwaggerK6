@@ -28,7 +28,10 @@ helm upgrade --install $LOKI_RELEASE_NAME grafana/loki-stack \
   --set loki.service.type=LoadBalancer \
   --set promtail.enabled=false
 
-echo "✏️ Applying Fluent Bit config directly to 'fluent-bit' ConfigMap..."
+echo "🧼 Deleting old fluent-bit ConfigMap if it exists..."
+kubectl delete configmap fluent-bit -n $NAMESPACE --ignore-not-found
+
+echo "📝 Creating updated fluent-bit ConfigMap..."
 cat <<EOF | kubectl apply -f -
 apiVersion: v1
 kind: ConfigMap
@@ -97,7 +100,11 @@ data:
     }
 EOF
 
-echo "🚀 Installing Fluent Bit with built-in config (from ConfigMap named 'fluent-bit')..."
-helm upgrade --install $FLUENT_BIT_RELEASE_NAME fluent/fluent-bit \
-  --namespace $NAMESPACE \
-  --set config.existingConfigMap=fluent-bit
+kubectl label configmap fluent-bit \
+  -n $NAMESPACE \
+  app.kubernetes.io/managed-by=Helm --overwrite
+
+kubectl annotate configmap fluent-bit \
+  -n $NAMESPACE \
+  meta.helm.sh/release-name=$FLUENT_BIT_RELEASE_NAME \
+  meta.helm.sh/release-namespace=$NAMESPACE --overwrite
