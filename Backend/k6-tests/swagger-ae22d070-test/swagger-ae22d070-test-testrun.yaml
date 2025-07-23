@@ -1,0 +1,15 @@
+apiVersion: k6.io/v1alpha1
+kind: TestRun
+metadata:
+  name: swagger-ae22d070-test
+  namespace: default
+spec:
+  parallelism: 1
+  script:
+    configMap:
+      name: swagger-ae22d070-test
+      file: swagger-ae22d070-test.tar
+  runner:
+    env:
+      - name: K6_WEB_DASHBOARD
+        value: "true"
