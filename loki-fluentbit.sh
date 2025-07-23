@@ -104,11 +104,11 @@ EOF
 echo "♻️ Restarting Fluent Bit pods to apply updated ConfigMap..."
 
 # Auto-detect whether it's a DaemonSet or Deployment
-if kubectl get daemonset "$FLUENT_BIT_RELEASE_NAME" -n "$NAMESPACE" &>/dev/null; then
-  kubectl rollout restart daemonset/$FLUENT_BIT_RELEASE_NAME -n $NAMESPACE
-elif kubectl get deployment "$FLUENT_BIT_RELEASE_NAME" -n "$NAMESPACE" &>/dev/null; then
-  kubectl rollout restart deployment/$FLUENT_BIT_RELEASE_NAME -n $NAMESPACE
-else
-  echo "❌ Could not find DaemonSet or Deployment named $FLUENT_BIT_RELEASE_NAME in namespace $NAMESPACE"
-  exit 1
-fi
+helm upgrade --install fluent-bit fluent/fluent-bit \
+  --namespace observability \
+  --set config.existingConfigMap=fluent-bit \
+  --set volumeMounts[0].mountPath="/run/fluent-bit" \
+  --set volumeMounts[0].name="fluentbit-db" \
+  --set volumes[0].name="fluentbit-db" \
+  --set volumes[0].emptyDir={}
+
