@@ -103,12 +103,15 @@ EOF
 
 echo "♻️ Restarting Fluent Bit pods to apply updated ConfigMap..."
 
-# Auto-detect whether it's a DaemonSet or Deployment
 helm upgrade --install fluent-bit fluent/fluent-bit \
   --namespace observability \
   --set config.existingConfigMap=fluent-bit \
+  --set config.customParsers="" \
+  --set config.filters="" \
+  --set config.outputs="" \
+  --set config.inputs="" \
+  --set config.service="" \
   --set volumeMounts[0].mountPath="/run/fluent-bit" \
   --set volumeMounts[0].name="fluentbit-db" \
   --set volumes[0].name="fluentbit-db" \
   --set volumes[0].emptyDir={}
-
