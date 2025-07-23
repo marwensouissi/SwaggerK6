@@ -179,6 +179,8 @@ kind: TestRun
 metadata:
   name: {name}
   namespace: {namespace}
+  labels:
+    test-name: {name}
 spec:
   parallelism: 1
   script:

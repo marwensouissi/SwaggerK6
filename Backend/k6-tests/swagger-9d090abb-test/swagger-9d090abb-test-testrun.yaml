@@ -3,6 +3,8 @@ kind: TestRun
 metadata:
   name: swagger-9d090abb-test
   namespace: default
+  labels:
+    test-name: swagger-9d090abb-test
 spec:
   parallelism: 1
   script:
