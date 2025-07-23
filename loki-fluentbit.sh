@@ -5,8 +5,8 @@ set -e
 cd /private/var/jenkins/workspace/DevOps/K6/cluster-builder-k6
 export KUBECONFIG="$(pwd)/kubeconfig_do.yaml"
 
-ls 
 
+ls 
 # Variables
 NAMESPACE="observability"
 LOKI_RELEASE_NAME="loki"
@@ -28,15 +28,12 @@ helm upgrade --install $LOKI_RELEASE_NAME grafana/loki-stack \
   --set loki.service.type=LoadBalancer \
   --set promtail.enabled=false
 
-echo "🧼 Deleting old fluent-bit ConfigMap if it exists..."
-kubectl delete configmap fluent-bit -n $NAMESPACE --ignore-not-found
-
-echo "📝 Creating updated fluent-bit ConfigMap..."
+echo "📦 Installing Fluent Bit with custom config..."
 cat <<EOF | kubectl apply -f -
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: fluent-bit
+  name: fluent-bit-custom-config
   namespace: $NAMESPACE
 data:
   fluent-bit.conf: |
@@ -100,11 +97,7 @@ data:
     }
 EOF
 
-kubectl label configmap fluent-bit \
-  -n $NAMESPACE \
-  app.kubernetes.io/managed-by=Helm --overwrite
+helm upgrade --install $FLUENT_BIT_RELEASE_NAME fluent/fluent-bit \
+  --namespace $NAMESPACE \
+  --set config.existingConfigMap=fluent-bit-custom-config
 
-kubectl annotate configmap fluent-bit \
-  -n $NAMESPACE \
-  meta.helm.sh/release-name=$FLUENT_BIT_RELEASE_NAME \
-  meta.helm.sh/release-namespace=$NAMESPACE --overwrite
