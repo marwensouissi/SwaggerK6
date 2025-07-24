@@ -198,6 +198,11 @@ async def run_k6_test_websocket(websocket: WebSocket):
                 console_offset = int(log_resp.headers.get("X-Text-Size", console_offset))
 
                 # Extract IPs if not already found
+                if not found_argocd_ip:
+                    argocd_match = re.search(r"✅ ArgoCD server IP:\s*([\d.]+)", log_text)
+                    if argocd_match:
+                        found_argocd_ip = argocd_match.group(1)
+                        await websocket.send_text(f"✅ ArgoCD IP: {found_argocd_ip}")
 
 
                 if not found_loki_ip:
@@ -205,6 +210,9 @@ async def run_k6_test_websocket(websocket: WebSocket):
                     if loki_match:
                         found_loki_ip = loki_match.group(1)
                         await websocket.send_text(f"📊 Loki IP: {found_loki_ip}")
+
+
+
 
             if status in ("SUCCESS", "FAILURE", "ABORTED"):
                 break
