@@ -27,10 +27,16 @@ class TopBar extends React.Component {
       selectedIndex: 0,
       showUploadModal: false,
       customSpecs: [], // Store uploaded specs here
-      uploadedSpecs: [] // <-- add this
+      uploadedSpecs: [], // <-- add this
+      clearApiList: false // Add clearApiList state
       // Removed hasMqtt, isCheckingMqtt, isInjectingMqtt
     }
     
+  }
+
+  handleApiListCleared = () => {
+    // Reset the clearApiList flag after clearing is complete
+    this.setState({ clearApiList: false });
   }
 
   UNSAFE_componentWillReceiveProps(nextProps) {
@@ -82,6 +88,16 @@ deleteSpec = async () => {
   }
 
   try {
+    // Clear API list first
+    this.setState({ clearApiList: true });
+    
+    // Clear localStorage
+    localStorage.removeItem('selectedApis');
+    
+    // Collapse all operation summaries
+    this.props.layoutActions.showSummary(false);
+    this.props.layoutActions.show([], false);
+    
     // If it's an uploaded spec, delete from server
     if (currentSpec.filename) {
       const response = await fetch(`http://localhost:6060/swagger/delete-json/${currentSpec.filename}`, {
@@ -318,6 +334,8 @@ getCurrentSwaggerFilename() {
 console.log("Passing swaggerFilename to ListSelectedApis:", swaggerFilename);
 <ListSelectedApis 
   swaggerFilename={swaggerFilename} 
+  clearApiList={this.state.clearApiList}
+  onApiListCleared={this.handleApiListCleared}
   onDebug={(payload) => console.log("Payload in ListSelectedApis:", payload)} 
 />
 
@@ -406,6 +424,7 @@ if (allSpecs.length) {
                 <FaUpload />
                 Upload JSON
               </Button>
+              
             </div>
 
               { /* (hasServers || hasSchemes || hasSecurityDefinitions) && (

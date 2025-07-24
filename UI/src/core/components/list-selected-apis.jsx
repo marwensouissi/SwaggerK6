@@ -4,32 +4,19 @@ import { removeApiEntry } from '../plugins/oas3/actions';
 import LaunchTestModal from './LaunchTestModal';
 import ChooseExecutionOption from './ChooseExecutionOption';
 
-
-const STORAGE_KEY = 'selectedApis';
-
-
 const HTTP_METHODS = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'];
-
-
-const saveToLocalStorage = (apiData) => {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(apiData));
-  } catch (error) {
-    console.error('Error saving to localStorage:', error);
-  }
-};
+const STORAGE_KEY = 'selectedApis';
 
 const loadFromLocalStorage = () => {
   try {
     const saved = localStorage.getItem(STORAGE_KEY);
     return saved ? JSON.parse(saved) : [];
   } catch (error) {
-    console.error('Error loading from localStorage:', error);
     return [];
   }
 };
 
-const ListSelectedApis = ({ swaggerFilename, clearApiList, onApiListCleared }) => {
+const ListSelectedApis = ({ swaggerFilename }) => {
   console.log("[ListSelectedApis] swaggerFilename:", swaggerFilename); // Debug
 const [hasToken, setHasToken] = useState(false);
 
@@ -44,15 +31,12 @@ const [hasToken, setHasToken] = useState(false);
   // Token modal state
   const [isTokenModalOpen, setTokenModalOpen] = useState(false);
   const [tokenInput, setTokenInput] = useState('');
-  const [savedApiData, setSavedApiData] = useState([]);
 
   // Initialize token from session storage
   useEffect(() => {
     const token = sessionStorage.getItem('authToken') || '';
     setTokenInput("");
     setHasToken(false);
-    const savedData = loadFromLocalStorage();
-    setSavedApiData(savedData);
 
   }, []);
 
@@ -167,7 +151,15 @@ const apiData = useSelector((state) => {
     dispatch(removeApiEntry(api, method.toLowerCase()));
   };
 
-const handleLaunchTest = async (stages) => {
+const handleRemoveLocal = (api, method, functionName) => {
+  // Remove from localStorage
+  const saved = loadFromLocalStorage();
+  const updated = saved.filter(item => !(item.api === api && item.method === method && item.functionName === functionName));
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+  setSavedApis(updated);
+};
+
+  const handleLaunchTest = async (stages) => {
   // Filter only HTTP APIs
   const httpTestCases = apiData
   .filter(({ method, functionName }) => HTTP_METHODS.includes(method) && !!functionName)
@@ -243,7 +235,6 @@ const handleLaunchTest = async (stages) => {
   }
 };
 
-
   const getMethodColor = (method) => {
     switch (method.toLowerCase()) {
       case 'get': return '#28a745';
@@ -260,7 +251,6 @@ const handleLaunchTest = async (stages) => {
   const [mqttStatus, setMqttStatus] = useState({});
   const [isCheckingMqtt, setIsCheckingMqtt] = useState({});
 
-  
   // Fetch MQTT injection status for each MQTT API entry
   useEffect(() => {
     const fetchStatuses = async () => {
@@ -321,23 +311,23 @@ const getFileName = (filePath) => {
   return filePath.split(/[/\\]/).pop();
 };
 
-  // Handle clearing API list when clearApiList prop is true
+  const [savedApis, setSavedApis] = useState([]);
+
   useEffect(() => {
-    if (clearApiList) {
-      // Clear localStorage
-      localStorage.removeItem(STORAGE_KEY);
-      // Clear saved API data in state
-      setSavedApiData([]);
-      // Clear Redux data by dispatching remove actions for all APIs
-      savedApiData.forEach(({ api, method }) => {
-        dispatch(removeApiEntry(api, method.toLowerCase()));
-      });
-      // Notify parent that clearing is complete
-      if (onApiListCleared) {
-        onApiListCleared();
-      }
-    }
-  }, [clearApiList, savedApiData, dispatch, onApiListCleared]);
+    setSavedApis(loadFromLocalStorage());
+  }, []);
+
+  // Polling to update savedApis in real time
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setSavedApis(loadFromLocalStorage());
+    }, 1000); // Poll every second
+    return () => clearInterval(interval);
+  }, []);
+
+  // Filter savedApis for HTTP and MQTT tabs
+const httpSavedApis = savedApis.filter(item => HTTP_METHODS.includes(item.method));
+const mqttSavedApis = savedApis.filter(item => item.method === 'MQTT');
 
   return (
     <div style={{
@@ -628,25 +618,14 @@ const getFileName = (filePath) => {
           }}>
             {/* Render list based on activeTab */}
             {activeTab === 'HTTP' ? (
-              !httpApis.some(item => item.functionName) ? (
-                <p style={{
-                  textAlign: 'center',
-                  color: '#586069',
-                  padding: '20px',
-                  fontSize: '14px'
-                }}>No HTTP APIs selected.</p>
+              httpSavedApis.length === 0 ? (
+                <p style={{ textAlign: 'center', color: '#586069', padding: '20px', fontSize: '14px' }}>No HTTP APIs selected.</p>
               ) : (
-                <ul style={{
-                  paddingLeft: 0,
-                  margin: 0,
-                  listStyle: 'none'
-                }}>
-                  {httpApis.map(({ api, method, bodyValue, functionName, params }, index) => {
+                <ul style={{ paddingLeft: 0, margin: 0, listStyle: 'none' }}>
+                  {httpSavedApis.map(({ api, method, bodyValue, functionName, params }, index) => {
                     if (!functionName) return null;
-
                     let displayApi = api.replace(/\{\?.*?\}/, '');
                     let queryParams = [];
-
                     if (params) {
                       Object.entries(params).forEach(([key, value]) => {
                         if (key.endsWith('-path')) {
@@ -657,98 +636,28 @@ const getFileName = (filePath) => {
                           queryParams.push(`${encodeURIComponent(paramName)}=${encodeURIComponent(value)}`);
                         }
                       });
-
                       if (queryParams.length > 0) {
                         displayApi;
                       }
                     }
-
                     return (
-                      <li key={index} style={{
-                        marginBottom: '16px',
-                        padding: '16px',
-                        border: '1px solid #e1e4e8',
-                        borderRadius: '8px',
-                        background: '#ffffff',
-                        transition: 'box-shadow 0.2s ease'
-                      }}>
-                        <div style={{
-                          display: 'flex',
-                          marginBottom: '8px',
-                          alignItems: 'flex-start'
-                        }}>
-                          <span style={{
-                            fontWeight: 600,
-                            color: '#24292e',
-                            minWidth: '110px',
-                            fontSize: '13px'
-                          }}>Function Name:</span>
-                          <span style={{
-                            color: '#0366d6',
-                            flex: 1,
-                            fontSize: '13px',
-                            wordBreak: 'break-word',
-                            fontWeight: 500
-                          }}>{functionName}</span>
+                      <li key={index} style={{ marginBottom: '16px', padding: '16px', border: '1px solid #e1e4e8', borderRadius: '8px', background: '#ffffff', transition: 'box-shadow 0.2s ease' }}>
+                        <div style={{ display: 'flex', marginBottom: '8px', alignItems: 'flex-start' }}>
+                          <span style={{ fontWeight: 600, color: '#24292e', minWidth: '110px', fontSize: '13px' }}>Function Name:</span>
+                          <span style={{ color: '#0366d6', flex: 1, fontSize: '13px', wordBreak: 'break-word', fontWeight: 500 }}>{functionName}</span>
                         </div>
-                        <div style={{
-                          display: 'flex',
-                          marginBottom: '8px',
-                          alignItems: 'flex-start'
-                        }}>
-                          <span style={{
-                            fontWeight: 600,
-                            color: '#24292e',
-                            minWidth: '110px',
-                            fontSize: '13px'
-                          }}>API:</span>
-                          <span style={{
-                            color: '#6a737d',
-                            flex: 1,
-                            fontSize: '13px',
-                            wordBreak: 'break-word'
-                          }}>{displayApi}</span>
+                        <div style={{ display: 'flex', marginBottom: '8px', alignItems: 'flex-start' }}>
+                          <span style={{ fontWeight: 600, color: '#24292e', minWidth: '110px', fontSize: '13px' }}>API:</span>
+                          <span style={{ color: '#6a737d', flex: 1, fontSize: '13px', wordBreak: 'break-word' }}>{displayApi}</span>
                         </div>
-                        <div style={{
-                          display: 'flex',
-                          marginBottom: '8px',
-                          alignItems: 'flex-start'
-                        }}>
-                          <span style={{
-                            fontWeight: 600,
-                            color: '#24292e',
-                            minWidth: '110px',
-                            fontSize: '13px'
-                          }}>Method:</span>
-                          <span style={{
-                            color: getMethodColor(method),
-                            flex: 1,
-                            fontSize: '13px',
-                            fontWeight: 500
-                          }}>{method}</span>
+                        <div style={{ display: 'flex', marginBottom: '8px', alignItems: 'flex-start' }}>
+                          <span style={{ fontWeight: 600, color: '#24292e', minWidth: '110px', fontSize: '13px' }}>Method:</span>
+                          <span style={{ color: getMethodColor(method), flex: 1, fontSize: '13px', fontWeight: 500 }}>{method}</span>
                         </div>
                         {bodyValue && (
                           <div style={{ marginTop: '12px' }}>
-                            <div style={{
-                              fontWeight: 600,
-                              color: '#24292e',
-                              fontSize: '13px'
-                            }}>Body:</div>
-                            <pre style={{
-                              background: '#f6f8fa',
-                              padding: '12px',
-                              borderRadius: '6px',
-                              overflowX: 'auto',
-                              whiteSpace: 'pre-wrap',
-                              wordBreak: 'break-word',
-                              fontSize: '12px',
-                              lineHeight: 1.5,
-                              marginTop: '8px',
-                              color: 'rgb(46, 164, 79)',
-                              border: '1px solid #e1e4e8',
-                              maxHeight: '200px',
-                              overflowY: 'auto'
-                            }}>
+                            <div style={{ fontWeight: 600, color: '#24292e', fontSize: '13px' }}>Body:</div>
+                            <pre style={{ background: '#f6f8fa', padding: '12px', borderRadius: '6px', overflowX: 'auto', whiteSpace: 'pre-wrap', wordBreak: 'break-word', fontSize: '12px', lineHeight: 1.5, marginTop: '8px', color: 'rgb(46, 164, 79)', border: '1px solid #e1e4e8', maxHeight: '200px', overflowY: 'auto' }}>
                               {JSON.stringify(JSON.parse(bodyValue), null, 2)}
                             </pre>
                           </div>
@@ -764,9 +673,10 @@ const getFileName = (filePath) => {
                             cursor: 'pointer',
                             fontSize: '13px',
                             fontWeight: 500,
-                            transition: 'all 0.2s ease'
+                            transition: 'all 0.2s ease',
+                            marginRight: '8px'
                           }}
-                          onClick={() => handleRemove(api, method)}
+                          onClick={() => handleRemoveLocal(api, method, functionName)}
                           onMouseEnter={(e) => {
                             e.target.style.backgroundColor = '#d73a49';
                             e.target.style.color = 'white';
@@ -823,7 +733,7 @@ const getFileName = (filePath) => {
                 </ul>
               )
             ) : (
-              !mqttApis.some(item => item.functionName) ? (
+              mqttSavedApis.length === 0 ? (
                 <div style={{ textAlign: 'center', color: '#586069', padding: '20px', fontSize: '14px' }}>
                   No MQTT APIs selected.
                   <br />
@@ -871,12 +781,8 @@ const getFileName = (filePath) => {
                   )}
                 </div>
               ) : (
-                <ul style={{
-                  paddingLeft: 0,
-                  margin: 0,
-                  listStyle: 'none'
-                }}>
-                  {mqttApis.map(({ api, method, bodyValue, functionName, params }, index) => {
+                <ul style={{ paddingLeft: 0, margin: 0, listStyle: 'none' }}>
+                  {mqttSavedApis.map(({ api, method, bodyValue, functionName, params }, index) => {
                     if (!functionName) return null;
 
                     let displayApi = api.replace(/\{\?.*?\}/, '');

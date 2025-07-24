@@ -101,20 +101,50 @@ export default class Execute extends Component {
     }
   };
 
-  onClick = () => {
-    const { path, method, oas3Actions } = this.props;
-    const { functionName } = this.state;
-  
-    // Validate request
-    const paramsResult = this.handleValidateParameters();
-    const requestBodyResult = this.handleValidateRequestBody();
-    const isPass = paramsResult && requestBodyResult;
-  
-    // Store the function name in Redux under request data
-    oas3Actions.setRequestFunctionName({ path, method, functionName });
-  
-    //this.handleValidationResult(isPass);
+ onClick = () => {
+  const { path, method, oas3Actions, operation } = this.props;
+  const { functionName } = this.state;
+
+  // Validate request
+  const paramsResult = this.handleValidateParameters();
+  const requestBodyResult = this.handleValidateRequestBody();
+  const isPass = paramsResult && requestBodyResult;
+
+  // Store the function name in Redux under request data
+  oas3Actions.setRequestFunctionName({ path, method, functionName });
+
+  // --- Save to localStorage ---
+  const STORAGE_KEY = "selectedApis";
+  // Compose the API object
+  const apiObj = {
+    api: path,
+    method: method.toUpperCase(),
+    functionName,
+    bodyValue: operation.getIn(["requestBody", "value"]) || null,
+    params: operation.get("parameters") || {},
   };
+  // Get current list
+  let current = [];
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    current = saved ? JSON.parse(saved) : [];
+  } catch (e) {}
+  // Add new API if not already present
+  const exists = current.some(
+    item =>
+      item.api === apiObj.api &&
+      item.method === apiObj.method &&
+      item.functionName === apiObj.functionName
+  );
+  if (!exists) {
+    current.push(apiObj);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(current));
+  }
+  // ---------------------------
+
+  //this.handleValidationResult(isPass);
+};
+
     render() {
     const { disabled } = this.props;
     const { functionName } = this.state;
