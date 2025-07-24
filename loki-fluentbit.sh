@@ -22,11 +22,19 @@ helm repo add grafana $LOKI_HELM_REPO
 helm repo add fluent $FLUENT_BIT_HELM_REPO
 helm repo update
 
-echo "📦 Installing Loki..."
-helm upgrade --install $LOKI_RELEASE_NAME grafana/loki-stack \
-  --namespace $NAMESPACE \
-  --set loki.service.type=LoadBalancer \
-  --set promtail.enabled=false
+
+
+helm install loki-stack grafana/loki-stack \
+  --namespace observability \
+  --set fluent-bit.enabled=true \
+    --set loki.service.type=LoadBalancer \
+  --set promtail.enabled=false \
+  --set grafana.enabled=false \
+  --set loki.enabled=true
+
+
+
+
 
 echo "📦 Installing Fluent Bit with custom config..."
 cat <<EOF | kubectl apply -f -
@@ -34,7 +42,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: fluent-bit-custom-config
-  namespace: $NAMESPACE
+  namespace: observability
 data:
   fluent-bit.conf: |
     [SERVICE]
@@ -68,7 +76,7 @@ data:
     [OUTPUT]
         Name                loki
         Match               kube.*
-        Url                 http://$LOKI_RELEASE_NAME.$NAMESPACE.svc.cluster.local:3100/loki/api/v1/push
+        Url                 http://loki.observability.svc.cluster.local:3100/loki/api/v1/push
         Labels              {job="fluent-bit"}
         LineFormat          json
         LogLevel            warn
