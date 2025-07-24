@@ -24,7 +24,7 @@ kubectl create namespace $NAMESPACE --dry-run=client -o yaml | kubectl apply -f 
 
 
 
-helm install loki-stack grafana/loki-stack \
+helm upgrade --install loki-stack grafana/loki-stack \
   --namespace observability \
     -f fluent-bit-fluent-bit-loki.yaml \
   --set fluent-bit.enabled=true \
