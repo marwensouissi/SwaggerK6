@@ -1,0 +1,17 @@
+apiVersion: k6.io/v1alpha1
+kind: TestRun
+metadata:
+  name: swagger-fd82e660-test
+  namespace: default
+  labels:
+    test-name: swagger-fd82e660-test
+spec:
+  parallelism: 1
+  script:
+    configMap:
+      name: swagger-fd82e660-test
+      file: swagger-fd82e660-test.tar
+  runner:
+    env:
+      - name: K6_WEB_DASHBOARD
+        value: "true"
