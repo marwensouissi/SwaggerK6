@@ -437,7 +437,7 @@ class App extends React.Component {
           <div style={{ display: "flex", alignItems: "center" }}>
             <span 
               onClick={() => this.setState({ showAddUserModal: true })}
-              style={{ cursor: "pointer", display: "flex", alignItems: "center" }}
+              style={{ cursor: "pointer", display: "flex", alignItems: "center"}}
             >
               {/* <span role="img" aria-label="add user" style={{ marginRight: "4px" }}>👤</span> */}
               {/* Add User */}

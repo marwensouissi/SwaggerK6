@@ -46,26 +46,36 @@ ws.onmessage = (event) => {
     }
     return prev;
   });
-    if (message.includes("Loki IP")) {
-    const match = message.match(/Loki IP:\s*([\d.]+)/);
-    if (match && match[1]) {
-      localStorage.setItem("loki_ip", match[1]);
-      console.log("Saved Loki IP to localStorage:", match[1]);
-      
-      fetch(`http://localhost:6060/generate/archive-and-push?filename=${filename}`, {
-      method: "POST",
-      headers: {
-         "Content-Type": "application/json",
-          'Authorization': `Bearer ${sessionStorage.getItem('authToken')}`,
+  
+    if (message.includes("ArgoCD IP")) {
+      const match = message.match(/ArgoCD IP:\s*([\d.]+)/);
+      if (match && match[1]) {
+        localStorage.setItem("argocd_ip", match[1]);  
+        console.log("Saved ArgoCD IP to localStorage:", match[1]);
+        fetch(`http://localhost:6060/generate/archive-and-push?filename=${filename}`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            'Authorization': `Bearer ${sessionStorage.getItem('authToken')}`,
+          }
+        })
+          .then(response => response.json())
+          .then(data => {
+            console.log("📦 Archive & push success:", data);
+            localStorage.setItem("cluster", "ready");
+          })
+          .catch(error => {
+            console.error("⚠️ Error during archive push:", error);
+          });
       }
-    })    .then(data => {
-      console.log("📦 Archive & push success:", data);
-    })
-    .catch(error => {
-      console.error("⚠️ Error during archive push:", error);
-    });
     }
-  }
+    if (message.includes("Loki IP")) {
+      const match = message.match(/Loki IP:\s*([\d.]+)/);
+      if (match && match[1]) {
+        localStorage.setItem("loki_ip", match[1]);
+        console.log("Saved Loki IP to localStorage:", match[1]);
+      }
+    }
     if (event.data.includes("Cluster deployment complete")) {
     setIsDeployed(true);
     setIsSubmitting(false);  // stop spinner
@@ -115,6 +125,9 @@ ws.onmessage = (event) => {
   
       const data = await response.text(); // or response.json() if JSON response
       setStatusMessages(prev => [...prev, `✅ Destroy complete: ${data}`]);
+                localStorage.setItem("cluster", "off");
+
+
     } catch (error) {
       console.error("Destroy error:", error);
       setStatusMessages(prev => [...prev, `❌ Failed to destroy: ${error.message}`]);

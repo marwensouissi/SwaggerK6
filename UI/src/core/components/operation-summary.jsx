@@ -24,8 +24,35 @@ export default class OperationSummary extends PureComponent {
     summary: ""
   }
 
-  render() {
+  // Add safe toggle handler for MQTT operations
+  handleToggleShown = () => {
+    const { toggleShown, operationProps } = this.props;
+    
+     try {
+    // Check if this is an MQTT operation
+    const method = operationProps.get('method');
+    const isMqtt = method && method.toLowerCase() === 'mqtt';
+    
+    if (isMqtt) {
+      // For MQTT operations, use a timeout to prevent state conflicts
+      setTimeout(() => {
+        try {
+          toggleShown();
+        } catch (error) {
+          console.error('MQTT toggle error:', error);
+        }
+      }, 0);
+    } else {
+      // For regular HTTP operations, use normal toggle
+      toggleShown();
+    }
+  } catch (error) {
+    console.error('Error toggling operation:', error);
+    // Prevent crash by gracefully handling the error
+  }
+  }
 
+  render() {
     let {
       isShown,
       toggleShown,
@@ -65,12 +92,16 @@ export default class OperationSummary extends PureComponent {
     const hasSecurity = security && !!security.count()
     const securityIsOptional = hasSecurity && security.size === 1 && security.first().isEmpty()
     const allowAnonymous = !hasSecurity || securityIsOptional
+
+    // Check if this is an MQTT operation for special handling
+    const isMqttOperation = method && method.toLowerCase() === 'mqtt';
+
     return (
       <div className={`opblock-summary opblock-summary-${method}`} >
         <button
           aria-expanded={isShown}
           className="opblock-summary-control"
-          onClick={toggleShown}
+          onClick={this.handleToggleShown}
         >
           <OperationSummaryMethod method={method} />
           <div className="opblock-summary-path-description-wrapper">
@@ -96,13 +127,13 @@ export default class OperationSummary extends PureComponent {
               }}
             />
         }
-        <JumpToPath path={specPath} />{/* TODO: use wrapComponents here, swagger-ui doesn't care about jumpToPath */}
+        <JumpToPath path={specPath} />
         <button
           aria-label={`${method} ${path.replace(/\//g, "\u200b/")}`}
           className="opblock-control-arrow"
           aria-expanded={isShown}
           tabIndex="-1"
-          onClick={toggleShown}>
+          onClick={this.handleToggleShown}>
           {isShown ? <ArrowUpIcon className="arrow" /> : <ArrowDownIcon className="arrow" />}
         </button>
       </div>
