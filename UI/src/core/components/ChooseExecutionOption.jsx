@@ -190,8 +190,9 @@ const handleCopyAll = () => {
   };
 
   if (selectedOption === 'cloud') {
-    return <CloudClusterForm onBack={() => setSelectedOption(null)} />;
-  }
+    return <CloudClusterForm onBack={() => setSelectedOption(null)} filename={filename} />;
+  }  
+
 
   return (
     

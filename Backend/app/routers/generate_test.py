@@ -179,6 +179,8 @@ kind: TestRun
 metadata:
   name: {name}
   namespace: {namespace}
+  labels:
+    test-name: {name}
 spec:
   parallelism: 1
   script:
@@ -206,6 +208,17 @@ def git_push(path: Path, message: str):
     # Push to origin (main or master depending on your branch)
     subprocess.run(["git", "push", "origin", "main"], cwd=path, check=True)
 
+def move_cloud_folders_to_history(cloud_dir: Path):
+    history_dir = cloud_dir.parent / "history"
+    history_dir.mkdir(exist_ok=True)
+
+    for item in cloud_dir.iterdir():
+        if item.is_dir():
+            dest = history_dir / item.name
+            if dest.exists():
+                shutil.rmtree(dest)
+            shutil.move(str(item), str(dest))
+
 
 @router.post("/archive-and-push")
 def archive_and_push_test(
@@ -219,6 +232,8 @@ def archive_and_push_test(
         # Prepare the cloud directory inside generated
         cloud_dir = GENERATED_DIR / "cloud"
         cloud_dir.mkdir(exist_ok=True)
+
+        move_cloud_folders_to_history(cloud_dir)
 
         # 1. Archive the K6 script (output will be in GENERATED_DIR)
         tar_path, archive_dir = k6_archive(js_file_path, GENERATED_DIR)
