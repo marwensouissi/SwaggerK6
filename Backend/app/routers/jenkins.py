@@ -147,6 +147,7 @@ async def run_k6_test_websocket(websocket: WebSocket):
             "REGION": data.get("region", "nyc3"),
             "CLUSTER_NAME": data.get("cluster_name", "my-k6-cluster"),
             "NODE_SIZE": data.get("node_size", "s-2vcpu-4gb"),
+            "FILENAME": data.get("filename", "test.js"),
         }
         
     except Exception as e:
