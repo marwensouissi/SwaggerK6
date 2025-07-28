@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Depends, Query, UploadFile
+from fastapi import APIRouter, HTTPException, Depends, Query, UploadFile, Body, Request
 from pathlib import Path
 from typing import Optional, List
 from sqlalchemy.orm import Session
@@ -8,6 +8,7 @@ from app.database import get_db
 from app.models.models import User
 from app.store.scenario_crud import create_scenario
 from app.classes.scenario_schemas import GenerateRequest, ScenarioCreate
+from fastapi.responses import StreamingResponse
 import re
 import json
 import uuid
@@ -17,7 +18,15 @@ import subprocess
 import base64
 import tarfile
 import shutil
+from typing import List
+import shutil
+import logging
 from datetime import datetime
+from sse_starlette.sse import EventSourceResponse
+import httpx
+import asyncio
+import time
+from typing import Optional
 
 router = APIRouter(prefix="/generate", tags=["generator"])
 logger = logging.getLogger(__name__)
@@ -208,18 +217,51 @@ def git_push(path: Path, message: str):
     # Push to origin (main or master depending on your branch)
     subprocess.run(["git", "push", "origin", "main"], cwd=path, check=True)
 
-def move_cloud_folders_to_history(cloud_dir: Path):
+
+def list_cloud_folders(cloud_dir: Path) -> List[str]:
+    return [f.name for f in cloud_dir.iterdir() if f.is_dir()]
+
+def move_selected_folders_to_history(cloud_dir: Path, selected_folders: List[str]):
     history_dir = cloud_dir.parent / "history"
     history_dir.mkdir(exist_ok=True)
 
-    for item in cloud_dir.iterdir():
-        if item.is_dir():
-            dest = history_dir / item.name
+    for folder_name in selected_folders:
+        source = cloud_dir / folder_name
+        dest = history_dir / folder_name
+        if source.exists() and source.is_dir():
             if dest.exists():
                 shutil.rmtree(dest)
-            shutil.move(str(item), str(dest))
+            shutil.move(str(source), str(dest))
+        else:
+            raise ValueError(f"Folder '{folder_name}' does not exist in cloud directory.")
 
 
+# --- ROUTES ---
+
+@router.get("/folders", response_model=List[str])
+def get_cloud_folders():
+    """List folders currently in the cloud directory."""
+    cloud_dir = GENERATED_DIR / "cloud"
+    try:
+        cloud_dir.mkdir(exist_ok=True)
+        return list_cloud_folders(cloud_dir)
+    except Exception as e:
+        logger.exception("Failed to list cloud folders")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/move-to-history")
+def destroy_cloud_folders(folders: List[str] = Body(...)):
+    """
+    Move selected cloud folders to the history folder.
+    """
+    cloud_dir = GENERATED_DIR / "cloud"
+    try:
+        move_selected_folders_to_history(cloud_dir, folders)
+        return {"status": "success", "moved": folders}
+    except Exception as e:
+        logger.exception("Failed to move folders to history")
+        raise HTTPException(status_code=500, detail=str(e)) 
 @router.post("/archive-and-push")
 def archive_and_push_test(
     filename: str = Query(..., description="Generated test filename")
@@ -233,7 +275,7 @@ def archive_and_push_test(
         cloud_dir = GENERATED_DIR / "cloud"
         cloud_dir.mkdir(exist_ok=True)
 
-        move_cloud_folders_to_history(cloud_dir)
+        # move_cloud_folders_to_history(cloud_dir)
 
         # 1. Archive the K6 script (output will be in GENERATED_DIR)
         tar_path, archive_dir = k6_archive(js_file_path, GENERATED_DIR)
@@ -290,10 +332,41 @@ def list_swagger_files():
     return [f.name for f in swagger_dir.glob("*.json")]
 
 # ROUTE: Optional - Get k6 Test Pod Logs (if ArgoCD + k6-operator used)
-@router.get("/logs/{testrun_name}")
-def get_k6_logs(testrun_name: str):
-    try:
-        logs = subprocess.check_output(["kubectl", "logs", f"job/{testrun_name}"], stderr=subprocess.STDOUT)
-        return {"logs": logs.decode()}
-    except subprocess.CalledProcessError as e:
-        raise HTTPException(status_code=500, detail=f"Failed to get logs: {e.output.decode()}") 
+# @router.get("/logs/{testrun_name}")
+# def get_k6_logs(testrun_name: str):
+#     try:
+#         logs = subprocess.check_output(["kubectl", "logs", f"job/{testrun_name}"], stderr=subprocess.STDOUT)
+#         return {"logs": logs.decode()}
+#     except subprocess.CalledProcessError as e:
+#         raise HTTPException(status_code=500, detail=f"Failed to get logs: {e.output.decode()}") 
+@router.get("/logs/stream")
+async def stream_logs(request: Request, loki_url: str, pod_name: str):
+    async def log_generator():
+        query = f'{{pod="{pod_name}"}}'
+        url = f"http://{loki_url}/loki/api/v1/query_range"
+        params = {
+            "query": query,
+            "start": "0",  # adjust time range if needed
+            "limit": 100,
+            "direction": "forward"
+        }
+        last_ts = None
+
+        while True:
+            async with httpx.AsyncClient() as client:
+                if await request.is_disconnected():
+                    break
+
+                response = await client.get(url, params=params)
+                if response.status_code == 200:
+                    result = response.json()["data"]["result"]
+                    for stream in result:
+                        for log in stream["values"]:
+                            ts, msg = log
+                            if ts != last_ts:
+                                last_ts = ts
+                                yield f"data: {msg}\n\n"
+
+            await asyncio.sleep(2)  # Polling interval
+
+    return StreamingResponse(log_generator(), media_type="text/event-stream")
