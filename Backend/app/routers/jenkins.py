@@ -58,6 +58,136 @@ def extract_ips_from_logs(log_text: str) -> dict:
     return result
 
 
+# @router.websocket("/ws-run-k6-test")
+# async def run_k6_test_websocket(websocket: WebSocket):
+#     await websocket.accept()
+#     logger.info("🔌 WebSocket connected")
+
+#     try:
+#         data = json.loads(await websocket.receive_text())
+#         params = {
+#             "token": TRIGGER_TOKEN,
+#             "REGION": data.get("region", "nyc3"),
+#             "CLUSTER_NAME": data.get("cluster_name", "my-k6-cluster"),
+#             "NODE_SIZE": data.get("node_size", "s-2vcpu-4gb"),
+#             "FILENAME": data.get("filename", "test.js"),
+#         }
+        
+#     except Exception as e:
+#         await websocket.send_text(f"❌ Invalid payload: {e}")
+#         return await websocket.close()
+
+#     session = requests.Session()
+#     auth = (USERNAME, API_TOKEN)
+
+#     # Trigger the Jenkins job
+#     resp = session.post(f"{JENKINS_URL}{JENKINS_JOB_PATH}/buildWithParameters", params=params, auth=auth, allow_redirects=False)
+#     if resp.status_code != 201:
+#         await websocket.send_text("❌ Failed to trigger Jenkins job")
+#         return await websocket.close()
+
+#     queue_url = resp.headers.get("Location")
+#     if not queue_url:
+#         await websocket.send_text("❌ Jenkins queue location missing")
+#         return await websocket.close()
+
+#     # Poll queue to get build number
+#     build_number = None
+#     for _ in range(15):
+#         r = session.get(f"{queue_url}api/json", auth=auth)
+#         if r.ok and r.json().get("executable"):
+#             build_number = r.json()["executable"]["number"]
+#             break
+#         await asyncio.sleep(1)
+
+#     if not build_number:
+#         await websocket.send_text("❌ Timeout waiting for build number")
+#         return await websocket.close()
+
+#     build_url = f"{JENKINS_URL}{JENKINS_JOB_PATH}/{build_number}"
+#     console_offset = 0
+#     found_argocd_ip = None
+#     found_loki_ip = None
+#     pod_name = None
+#     sent_pod_names = set()
+
+#     try:
+#         while True:
+#             # Send "Running..." while job is active
+#             status = await fetch_build_status(session, auth, build_number)
+
+#             # Fetch Jenkins log from current offset
+#             log_resp = session.get(f"{build_url}/logText/progressiveText?start={console_offset}", auth=auth)
+#             if log_resp.status_code == 200:
+#                 log_text = log_resp.text
+#                 console_offset = int(log_resp.headers.get("X-Text-Size", console_offset))
+
+#                 # Extract IPs if not already found
+#                 if not found_argocd_ip:
+#                     argocd_match = re.search(r"✅ ArgoCD server IP:\s*([\d.]+)", log_text)
+#                     if argocd_match:
+#                         found_argocd_ip = argocd_match.group(1)
+#                         await websocket.send_text(f"✅ ArgoCD IP: {found_argocd_ip}")
+
+
+#                 if not found_loki_ip:
+#                     loki_match = re.search(r"LOKI_SERVER=([\d.]+)", log_text)
+#                     if loki_match:
+#                         found_loki_ip = loki_match.group(1)
+#                         await websocket.send_text(f"📊 Loki IP: {found_loki_ip}")
+
+#                 if not pod_name:
+#                     pod_matches = re.findall(r"POD_NAME=\s*([^\s]+)", log_text)
+#                     for pod_name in pod_matches:
+#                         if pod_name not in sent_pod_names:
+#                             await websocket.send_text(f"POD_NAME= {pod_name}")
+#                             sent_pod_names.add(pod_name)  # ✅ Prevent re-sending
+
+
+#             if status in ("SUCCESS", "FAILURE", "ABORTED"):
+#                 break
+
+#             # Still running
+#             await websocket.send_text("⏳ Running...")
+#             await asyncio.sleep(2)
+
+#         # Final status
+#         if status == "SUCCESS":
+#             await websocket.send_text("✅ SUCCESS")
+
+#             # ✅ Update cluster existence status
+#             cluster_status_cache.update({
+#                 "cluster_exists": True,
+#                 "job_number": build_number,
+#                 "note": "Cluster deployed via WebSocket"
+#             })
+#         else:
+#             await websocket.send_text(f"❌ {status}")
+
+#     except WebSocketDisconnect:
+#         logger.info("WebSocket disconnected by client.")
+#     except Exception as e:
+#         await websocket.send_text(f"❌ Error: {e}")
+#     finally:
+#         await websocket.close()
+#         logger.info("🔌 WebSocket closed")
+
+
+
+# Optional cache
+cluster_status_cache = {}
+
+async def fetch_build_status(session, auth, build_number):
+    status_url = f"{JENKINS_URL}{JENKINS_JOB_PATH}/{build_number}/api/json"
+    try:
+        resp = session.get(status_url, auth=auth)
+        if resp.ok:
+            return resp.json().get("result") or "RUNNING"
+    except Exception:
+        pass
+    return "UNKNOWN"
+
+
 @router.websocket("/ws-run-k6-test")
 async def run_k6_test_websocket(websocket: WebSocket):
     await websocket.accept()
@@ -72,7 +202,6 @@ async def run_k6_test_websocket(websocket: WebSocket):
             "NODE_SIZE": data.get("node_size", "s-2vcpu-4gb"),
             "FILENAME": data.get("filename", "test.js"),
         }
-        
     except Exception as e:
         await websocket.send_text(f"❌ Invalid payload: {e}")
         return await websocket.close()
@@ -80,7 +209,7 @@ async def run_k6_test_websocket(websocket: WebSocket):
     session = requests.Session()
     auth = (USERNAME, API_TOKEN)
 
-    # Trigger the Jenkins job
+    # Trigger Jenkins job
     resp = session.post(f"{JENKINS_URL}{JENKINS_JOB_PATH}/buildWithParameters", params=params, auth=auth, allow_redirects=False)
     if resp.status_code != 201:
         await websocket.send_text("❌ Failed to trigger Jenkins job")
@@ -108,54 +237,60 @@ async def run_k6_test_websocket(websocket: WebSocket):
     console_offset = 0
     found_argocd_ip = None
     found_loki_ip = None
-    pod_name = None
     sent_pod_names = set()
 
     try:
+        # ✅ One-time initial log fetch (from start=0)
+        initial_resp = session.get(f"{build_url}/logText/progressiveText?start=0", auth=auth)
+        if initial_resp.status_code == 200:
+            initial_log = initial_resp.text
+            pod_matches = re.findall(r"POD_NAME=\s*([^\s]+)", initial_log)
+            for pod_name in pod_matches:
+                if pod_name not in sent_pod_names:
+                    await websocket.send_text(f"POD_NAME= {pod_name}")
+                    sent_pod_names.add(pod_name)
+
+        # Begin streaming from 0 or latest known offset
         while True:
-            # Send "Running..." while job is active
             status = await fetch_build_status(session, auth, build_number)
 
-            # Fetch Jenkins log from current offset
+            # Fetch Jenkins log chunk from current offset
             log_resp = session.get(f"{build_url}/logText/progressiveText?start={console_offset}", auth=auth)
             if log_resp.status_code == 200:
                 log_text = log_resp.text
                 console_offset = int(log_resp.headers.get("X-Text-Size", console_offset))
 
-                # Extract IPs if not already found
+                # Detect ArgoCD IP
                 if not found_argocd_ip:
                     argocd_match = re.search(r"✅ ArgoCD server IP:\s*([\d.]+)", log_text)
                     if argocd_match:
                         found_argocd_ip = argocd_match.group(1)
                         await websocket.send_text(f"✅ ArgoCD IP: {found_argocd_ip}")
 
-
+                # Detect Loki IP
                 if not found_loki_ip:
                     loki_match = re.search(r"LOKI_SERVER=([\d.]+)", log_text)
                     if loki_match:
                         found_loki_ip = loki_match.group(1)
                         await websocket.send_text(f"📊 Loki IP: {found_loki_ip}")
 
-                if not pod_name:
-                    pod_matches = re.findall(r"POD_NAME=\s*([^\s]+)", log_text)
-                    for pod_name in pod_matches:
-                        if pod_name not in sent_pod_names:
-                            await websocket.send_text(f"POD_NAME= {pod_name}")
-                            sent_pod_names.add(pod_name)  # ✅ Prevent re-sending
+                # Detect new pod names
+                pod_matches = re.findall(r"POD_NAME=\s*([^\s]+)", log_text)
+                for pod_name in pod_matches:
+                    if pod_name not in sent_pod_names:
+                        await websocket.send_text(f"POD_NAME= {pod_name}")
+                        sent_pod_names.add(pod_name)
 
-
+            # Break if build completed
             if status in ("SUCCESS", "FAILURE", "ABORTED"):
                 break
 
-            # Still running
             await websocket.send_text("⏳ Running...")
             await asyncio.sleep(2)
 
-        # Final status
+        # Final result
         if status == "SUCCESS":
             await websocket.send_text("✅ SUCCESS")
-
-            # ✅ Update cluster existence status
             cluster_status_cache.update({
                 "cluster_exists": True,
                 "job_number": build_number,
