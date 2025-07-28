@@ -109,6 +109,7 @@ async def run_k6_test_websocket(websocket: WebSocket):
     found_argocd_ip = None
     found_loki_ip = None
     pod_name = None
+    sent_pod_names = set()
 
     try:
         while True:
@@ -138,7 +139,9 @@ async def run_k6_test_websocket(websocket: WebSocket):
                 if not pod_name:
                     pod_matches = re.findall(r"POD_NAME=\s*([^\s]+)", log_text)
                     for pod_name in pod_matches:
-                        await websocket.send_text(f"POD_NAME= {pod_name}")
+                        if pod_name not in sent_pod_names:
+                            await websocket.send_text(f"POD_NAME= {pod_name}")
+                            sent_pod_names.add(pod_name)  # ✅ Prevent re-sending
 
 
             if status in ("SUCCESS", "FAILURE", "ABORTED"):
