@@ -213,7 +213,7 @@ async def run_k6_test_websocket(websocket: WebSocket):
                         await websocket.send_text(f"📊 Loki IP: {found_loki_ip}")
 
                 if not pod_name:
-                    pod_match = re.search(r"POD_NAME: ([\w-]+)", log_text)
+                    pod_match = re.search(r"POD_NAME= ([\w-]+)", log_text)
                     if pod_match:
                         pod_name = pod_match.group(1)
                         await websocket.send_text(f"POD_NAME= {pod_name}")
