@@ -1,0 +1,17 @@
+apiVersion: k6.io/v1alpha1
+kind: TestRun
+metadata:
+  name: swagger-57ba38ce-test
+  namespace: default
+  labels:
+    test-name: swagger-57ba38ce-test
+spec:
+  parallelism: 1
+  script:
+    configMap:
+      name: swagger-57ba38ce-test
+      file: swagger-57ba38ce-test.tar
+  runner:
+    env:
+      - name: K6_WEB_DASHBOARD
+        value: "true"
