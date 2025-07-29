@@ -202,6 +202,25 @@ spec:
         value: "true"
 """.strip()
 
+def generate_service_yaml(name: str, namespace: str = "default", service_type: str = "LoadBalancer") -> str:
+    return f"""
+apiVersion: v1
+kind: Service
+metadata:
+  name: {name}-svc
+  namespace: {namespace}
+spec:
+  type: {service_type}
+  selector:
+    k6-test-run: {name}
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 5665
+      name: dashboard
+""".strip()
+
+
 
 def git_push(path: Path, message: str):
     # Add all changes
@@ -301,6 +320,9 @@ def archive_and_push_test(
         )
         (test_cloud_dir / testrun_filename).write_text(
             generate_testrun_yaml(test_name)
+        )
+        (test_cloud_dir / f"{test_name}-service.yaml").write_text(
+            generate_service_yaml(test_name)
         )
 
 

@@ -50,6 +50,7 @@ async def log_stream_generator(loki_ip: str, pod_name: str):
                         timestamp, log_line = value
                         if (timestamp, log_line) not in seen_logs:
                             seen_logs.add((timestamp, log_line))
+                            yield f"data: {log_line}\n\n"
                             await asyncio.sleep(0.01)
 
             except Exception as e:

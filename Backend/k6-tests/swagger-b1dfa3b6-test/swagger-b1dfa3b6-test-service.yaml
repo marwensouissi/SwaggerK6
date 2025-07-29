@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: swagger-b1dfa3b6-test-svc
+  namespace: default
+spec:
+  type: LoadBalancer
+  selector:
+    k6-test-run: swagger-b1dfa3b6-test
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 5665
+      name: dashboard
