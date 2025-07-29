@@ -202,6 +202,7 @@ binaryData:
 #         value: "true"
 # """.strip()
 
+
 def generate_testrun_yaml(name: str, namespace: str = "default") -> str:
     return f"""
 apiVersion: k6.io/v1alpha1
@@ -221,6 +222,10 @@ spec:
     env:
       - name: K6_WEB_DASHBOARD
         value: "true"
+    ports:
+      - containerPort: 5665
+        name: dashboard
+
 ---
 apiVersion: v1
 kind: Service
@@ -228,14 +233,16 @@ metadata:
   name: {name}-dashboard
   namespace: {namespace}
 spec:
-  selector:
-    test-name: {name}
-  ports:
-    - protocol: TCP
-      port: 80
-      targetPort: 6565  
   type: LoadBalancer
+  selector:
+    test-name: {name}  # matches metadata.labels
+  ports:
+    - name: http
+      port: 80
+      targetPort: 5665
+      protocol: TCP
 """.strip()
+
 
 # def generate_service_yaml(name: str, namespace: str = "default", service_type: str = "LoadBalancer") -> str:
 #     return f"""
