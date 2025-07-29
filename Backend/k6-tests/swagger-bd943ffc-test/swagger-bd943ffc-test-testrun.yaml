@@ -1,0 +1,31 @@
+apiVersion: k6.io/v1alpha1
+kind: TestRun
+metadata:
+  name: swagger-bd943ffc-test
+  namespace: default
+  labels:
+    test-name: swagger-bd943ffc-test
+spec:
+  parallelism: 1
+  script:
+    configMap:
+      name: swagger-bd943ffc-test
+      file: swagger-bd943ffc-test.tar
+  runner:
+    env:
+      - name: K6_WEB_DASHBOARD
+        value: "true"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: swagger-bd943ffc-test-dashboard
+  namespace: default
+spec:
+  selector:
+    test-name: swagger-bd943ffc-test
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 6565  
+  type: LoadBalancer

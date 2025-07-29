@@ -233,7 +233,7 @@ spec:
   ports:
     - protocol: TCP
       port: 80
-      targetPort: 5665
+      targetPort: 6565  
   type: LoadBalancer
 """.strip()
 
