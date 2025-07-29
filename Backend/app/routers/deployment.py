@@ -52,7 +52,6 @@ async def destroy_cluster(cluster_id: str):
     except subprocess.CalledProcessError as e:
         raise HTTPException(status_code=500, detail=f"Terraform destroy error: {e}")
 
-
 async def log_stream_generator(loki_ip: str, pod_name: str):
     loki_url = f"http://{loki_ip}:3100/loki/api/v1/query"
     query = f'{{instance="{pod_name}"}}'
@@ -77,7 +76,7 @@ async def log_stream_generator(loki_ip: str, pod_name: str):
             except Exception as e:
                 yield f"data: Error fetching logs: {e}\n\n"
 
-        await asyncio.sleep(2)  # poll every 2 seconds
+        await asyncio.sleep(2)
 
 @router.get("/stream-logs")
 async def stream_logs(loki_ip: str, pod_name: str):
