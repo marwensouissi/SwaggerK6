@@ -181,6 +181,27 @@ binaryData:
 """.strip()
 
 
+# def generate_testrun_yaml(name: str, namespace: str = "default") -> str:
+#     return f"""
+# apiVersion: k6.io/v1alpha1
+# kind: TestRun
+# metadata:
+#   name: {name}
+#   namespace: {namespace}
+#   labels:
+#     test-name: {name}
+# spec:
+#   parallelism: 1
+#   script:
+#     configMap:
+#       name: {name}
+#       file: {name}.tar
+#   runner:
+#     env:
+#       - name: K6_WEB_DASHBOARD
+#         value: "true"
+# """.strip()
+
 def generate_testrun_yaml(name: str, namespace: str = "default") -> str:
     return f"""
 apiVersion: k6.io/v1alpha1
@@ -200,25 +221,39 @@ spec:
     env:
       - name: K6_WEB_DASHBOARD
         value: "true"
-""".strip()
-
-def generate_service_yaml(name: str, namespace: str = "default", service_type: str = "LoadBalancer") -> str:
-    return f"""
+---
 apiVersion: v1
 kind: Service
 metadata:
-  name: {name}-svc
+  name: {name}-dashboard
   namespace: {namespace}
 spec:
-  type: {service_type}
   selector:
-    k6-test-run: {name}
+    test-name: {name}
   ports:
     - protocol: TCP
       port: 80
       targetPort: 5665
-      name: dashboard
+  type: LoadBalancer
 """.strip()
+
+# def generate_service_yaml(name: str, namespace: str = "default", service_type: str = "LoadBalancer") -> str:
+#     return f"""
+# apiVersion: v1
+# kind: Service
+# metadata:
+#   name: {name}-svc
+#   namespace: {namespace}
+# spec:
+#   type: {service_type}
+#   selector:
+#     k6-test-run: {name}
+#   ports:
+#     - protocol: TCP
+#       port: 80
+#       targetPort: 5665
+#       name: dashboard
+# """.strip()
 
 
 
@@ -321,9 +356,9 @@ def archive_and_push_test(
         (test_cloud_dir / testrun_filename).write_text(
             generate_testrun_yaml(test_name)
         )
-        (test_cloud_dir / f"{test_name}-service.yaml").write_text(
-            generate_service_yaml(test_name)
-        )
+        # (test_cloud_dir / f"{test_name}-service.yaml").write_text(
+        #     generate_service_yaml(test_name)
+        # )
 
 
         # 3. Copy cloud/test_name folder to Bitbucket repo under k6-tests/test_name
