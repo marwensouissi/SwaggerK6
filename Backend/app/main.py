@@ -12,12 +12,15 @@ from app.routers import swagger
 from app.routers import generate_test
 from app.routers import execution
 from app.routers import mqtt
+from app.routers import deployment
+
 from app.routers import jenkins
 
 import asyncio
 
 app = FastAPI()  # ✅ Only define once
 app.include_router(user.router)
+app.include_router(deployment.router)
 app.include_router(swagger.router)
 app.include_router(generate_test.router)
 app.include_router(execution.router)
