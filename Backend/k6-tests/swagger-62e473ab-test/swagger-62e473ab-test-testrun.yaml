@@ -1,0 +1,31 @@
+apiVersion: k6.io/v1alpha1
+kind: TestRun
+metadata:
+  name: swagger-62e473ab-test
+  namespace: default
+  labels:
+    test-name: swagger-62e473ab-test
+spec:
+  parallelism: 1
+  script:
+    configMap:
+      name: swagger-62e473ab-test
+      file: swagger-62e473ab-test.tar
+  runner:
+    env:
+      - name: K6_WEB_DASHBOARD
+        value: "true"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: swagger-62e473ab-test-dashboard
+  namespace: default
+spec:
+  selector:
+    test-name: swagger-62e473ab-test
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 6565  
+  type: LoadBalancer
