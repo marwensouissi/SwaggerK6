@@ -143,7 +143,6 @@ SwaggerUI.propTypes = {
       "head",
       "patch",
       "trace",
-      
     ])
   ),
   queryConfigEnabled: PropTypes.bool,

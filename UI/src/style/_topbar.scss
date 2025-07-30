@@ -44,15 +44,21 @@
     display: flex;
     flex: 3;
     justify-content: flex-end;
+                height: 37px;
+
 
     input[type="text"] {
       width: 100%;
       max-width: 100%;
       margin: 0;
+                  height: 37px;
+
 
       border: 2px solid $topbar-download-url-wrapper-element-border-color;
       border-radius: 4px 0 0 4px;
       outline: none;
+                  height: 37px;
+
     }
 
     .select-label {
@@ -62,7 +68,9 @@
       width: 100%;
       border:#0c1957;
       max-width: 600px;
-      margin: 0;
+      margin: 0;           
+       height: 37px;
+
       color: #0a0a0a;
       span {
         font-size: 16px;
@@ -76,7 +84,8 @@
 
       select {
         flex: 2;
-        
+                    height: 37px;
+
         width: 100%;
         color: #0a0a0a;
         border: 2px solid $topbar-download-url-wrapper-element-border-color;

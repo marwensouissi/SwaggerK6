@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { FaCloud, FaArrowLeft } from 'react-icons/fa';
 import tf from '../../core/assets/tf.png';  
 import digitalOceanLogo from '../../core/assets/png-transparent-digitalocean-hd-logo-thumbnail.png';
+import LogStream from './LogStream'; // adjust path as needed
 
 const CloudClusterForm = ({ onBack, filename }) => { // <-- include filename
   const [region, setRegion] = useState('fra1');
@@ -12,7 +13,39 @@ const CloudClusterForm = ({ onBack, filename }) => { // <-- include filename
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentAction, setCurrentAction] = useState(null); // "deploy" or "destroy"
   const wsRef = useRef(null);
+  const [cloudFolders, setCloudFolders] = useState([]);
+  
+  const podNames = JSON.parse(localStorage.getItem('pod_names') || '[]');
+  const [openLogInfo, setOpenLogInfo] = useState(null); // { podName, lokiIP }
+
+const podNamesRef = useRef([]);
+
 const [isDeployed, setIsDeployed] = useState(false);
+
+  useEffect(() => {
+    // Fetch folders on mount
+  refreshFolderList(); // Fetch folders on mount
+
+
+    // Cleanup WebSocket on unmount
+    return () => {
+      if (wsRef.current) {
+        wsRef.current.close();
+        console.log("🔌 WebSocket connection closed");
+      }
+    };
+  }, []);
+
+const refreshFolderList = () => {
+  fetch("http://localhost:6060/generate/folders")
+    .then((res) => res.json())
+    .then((data) => {
+      setCloudFolders(data);
+      console.log("📂 Refreshed folder list:", data);
+    })
+    .catch((err) => console.error("❌ Failed to fetch cloud folders:", err));
+};
+
 
   const openWebSocket = (action) => {
     if (wsRef.current) {
@@ -26,12 +59,15 @@ const [isDeployed, setIsDeployed] = useState(false);
     wsRef.current = ws;
 
     ws.onopen = () => {
+      const otherFiles = cloudFolders.filter((name) => name !== filename);
+      const filenameChain = [filename, ...otherFiles].join(",");
       const payload = { 
         action, 
         region, 
         cluster_name: clusterName, 
         node_size: nodeSize,
-        filename 
+        filename: filenameChain,
+ 
       };
       ws.send(JSON.stringify(payload));
       setStatusMessages((prev) => [...prev, `🔌 Connected to WebSocket. Starting ${action}...`]);
@@ -59,14 +95,19 @@ ws.onmessage = (event) => {
             'Authorization': `Bearer ${sessionStorage.getItem('authToken')}`,
           }
         })
+        
           .then(response => response.json())
           .then(data => {
             console.log("📦 Archive & push success:", data);
             localStorage.setItem("cluster", "ready");
+                        refreshFolderList();
+
           })
           .catch(error => {
             console.error("⚠️ Error during archive push:", error);
           });
+             // Refresh folders list after deployment complete
+
       }
     }
     if (message.includes("Loki IP")) {
@@ -76,10 +117,26 @@ ws.onmessage = (event) => {
         console.log("Saved Loki IP to localStorage:", match[1]);
       }
     }
+if (message.startsWith("POD_NAME=")) {
+  const podLine = message.replace("POD_NAME=", "").trim();
+
+  // Handle "pod-X:pod-name"
+  const parts = podLine.split(":");
+  const podName = parts.length === 2 ? parts[1].trim() : parts[0].trim();
+
+  if (podName && !podNamesRef.current.includes(podName)) {
+    podNamesRef.current.push(podName);
+    localStorage.setItem("pod_names", JSON.stringify(podNamesRef.current));
+    console.log("✅ Saved pod:", podName);
+    console.log("📦 All pod_names:", podNamesRef.current);
+  }
+}
+
     if (event.data.includes("Cluster deployment complete")) {
     setIsDeployed(true);
     setIsSubmitting(false);  // stop spinner
     setCurrentAction(null);
+ 
   }
 };
     ws.onerror = (err) => {
@@ -97,6 +154,8 @@ ws.onmessage = (event) => {
   const handleSubmit = () => {
     openWebSocket('deploy');
   };
+
+  
 
   const handleDestroy = async () => {
     if (!window.confirm(`Are you sure you want to destroy cluster "${clusterName}"? This action cannot be undone.`)) {
@@ -136,15 +195,31 @@ ws.onmessage = (event) => {
       setCurrentAction(null);
     }
   };
+  const handleDeleteFolder = async (folderName) => {
+  if (!window.confirm(`Are you sure you want to delete folder "${folderName}"?`)) return;
+
+  try {
+    const res = await fetch("http://localhost:6060/generate/move-to-history", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify([folderName])
+    });
+
+    if (!res.ok) throw new Error("Failed to delete folder");
+
+    setCloudFolders(prev => prev.filter(f => f !== folderName));
+    alert(`✅ Folder "${folderName}" moved to history`);
+  } catch (err) {
+    console.error("Error deleting folder:", err);
+    alert(`❌ Error: ${err.message}`);
+  }
+};
+
   
   // Cleanup WebSocket on unmount
-  useEffect(() => {
-    return () => {
-      if (wsRef.current) {
-        wsRef.current.close();
-      }
-    };
-  }, []);
+
 
   return (
     <motion.div 
@@ -244,6 +319,126 @@ ws.onmessage = (event) => {
           </div>
         </div>
 
+<div style={{
+  maxWidth: '800px',
+  margin: '0 auto',
+  padding: '20px',
+  fontFamily: 'Arial, sans-serif'
+}}>
+  <h3 style={{ 
+    marginBottom: '15px',
+    color: '#1cc300',
+    fontWeight: '500'
+  }}>
+    Existing Tests
+  </h3>
+
+  {cloudFolders.length > 0 ? (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+      {cloudFolders.map(folder => {
+        const podNames = JSON.parse(localStorage.getItem('pod_names') || '[]');
+        const matchedPod = podNames.find(pod => pod.startsWith(folder));
+        const lokiIP = localStorage.getItem('loki_ip');
+        return (
+          <div key={folder} style={{
+            backgroundColor: '#1a202c',
+            borderRadius: '8px',
+            border: '1px solid #2d3748',
+            overflow: 'hidden',
+            marginBottom: '8px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '12px 15px',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div style={{
+                background: 'linear-gradient(145deg, #1a202c, #0d1117)',
+                width: '36px',
+                height: '36px',
+                borderRadius: '6px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                border: '1px solid #2d3748'
+              }}>
+                <span>📁</span>
+              </div>
+              <span style={{ fontWeight: '500', color: '#e2e8f0', fontSize: '14px' }}>{folder}</span>
+            </div>
+            {matchedPod ? (
+              <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                <button
+                  onClick={() => setOpenLogInfo({ podName: matchedPod, lokiIP })}
+                  title="View Logs"
+                  style={{
+                    background: 'linear-gradient(145deg, #1a202c, #0d1117)',
+                    width: '40px',
+                    height: '40px',
+                    border: '1px solid #2d3748',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.4)',
+                    transition: 'all 0.2s ease'
+                  }}
+                  onMouseOver={e => e.currentTarget.style.borderColor = '#4299e1'}
+                  onMouseOut={e => e.currentTarget.style.borderColor = '#2d3748'}
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M21 10H7M21 14H7M11 3H5C3.89543 3 3 3.89543 3 5V19C3 20.1046 3.89543 21 5 21H19C20.1046 21 21 20.1046 21 19V13" stroke="#63b3ed" strokeWidth="2" strokeLinecap="round"/>
+                    <path d="M11 3L17 9" stroke="#63b3ed" strokeWidth="2" strokeLinecap="round"/>
+                  </svg>
+                </button>
+                <button
+                  onClick={() => handleDeleteFolder(folder)}
+                  title="Remove"
+                  style={{
+                    background: 'linear-gradient(145deg, #1a202c, #0d1117)',
+                    width: '40px',
+                    height: '40px',
+                    border: '1px solid #2d3748',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.4)',
+                    transition: 'all 0.2s ease'
+                  }}
+                  onMouseOver={e => e.currentTarget.style.borderColor = '#e53e3e'}
+                  onMouseOut={e => e.currentTarget.style.borderColor = '#2d3748'}
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M19 7L18.1327 19.1425C18.0579 20.1891 17.187 21 16.1379 21H7.86211C6.81296 21 5.94208 20.1891 5.86732 19.1425L5 7M10 11V17M14 11V17M15 7V4C15 3.44772 14.5523 3 14 3H10C9.44772 3 9 3.44772 9 4V7M4 7H20" stroke="#fc8181" strokeWidth="2" strokeLinecap="round"/>
+                  </svg>
+                </button>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#fc8181', fontSize: '13px', padding: '8px 12px', borderRadius: '4px', background: 'rgba(252, 129, 129, 0.1)' }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 9V11M12 15H12.01M5.07183 19H18.9282C20.4678 19 21.4301 17.3333 20.6603 16L13.7321 4C12.9623 2.66667 11.0378 2.66667 10.268 4L3.33978 16C2.56998 17.3333 3.53223 19 5.07183 19Z" stroke="#fc8181" strokeWidth="2" strokeLinecap="round"/>
+                </svg>
+                <span>No pod found</span>
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  ) : (
+    <p style={{ 
+      color: '#666',
+      fontStyle: 'italic',
+      padding: '15px'
+    }}>
+      No folders found.
+    </p>
+  )}
+</div>
+
         <div className="modal-actions">
           <motion.button 
             className="cancel-btn"
@@ -281,6 +476,14 @@ ws.onmessage = (event) => {
                 </motion.button>
         </div>  
 
+        {/* LogStream modal for pod logs */}
+        {openLogInfo && (
+          <LogStream
+            podName={openLogInfo.podName}
+            lokiIP={openLogInfo.lokiIP}
+            onClose={() => setOpenLogInfo(null)}
+          />
+        )}
         <style jsx>{`
 
 .swagger-ui h1 {
@@ -321,7 +524,7 @@ ws.onmessage = (event) => {
             background: linear-gradient(145deg, #1a202c, #0d1117);
             border-radius: 16px;
             padding: 2.5rem;
-            width: 85%;
+            width: 100%;
             max-width: 800px;
             max-height: 90vh;
             box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
@@ -616,6 +819,42 @@ border: 1px solid #4a5568;
               width: 100%;
             }
           }
+
+          .folder-list {
+  background: #151d2e;
+  padding: 1rem;
+  border-radius: 10px;
+  border: 1px solid #2d3748;
+  margin-bottom: 2rem;
+  box-shadow: inset 0 1px 5px rgba(0, 0, 0, 0.2);
+}
+
+.folder-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #1f2738;
+  border: 1px solid #333c4e;
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  margin-bottom: 0.5rem;
+  color: #e2e8f0;
+  font-size: 0.9rem;
+}
+
+.delete-btn {
+  background: none;
+  border: none;
+  color: #f56565;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.delete-btn:hover {
+  transform: scale(1.2);
+}
+
         `}</style>
       </motion.div>
     </motion.div>

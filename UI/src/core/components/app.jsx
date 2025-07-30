@@ -6,7 +6,8 @@ import AddUserModal from "./add_user"
 import { TiUserAdd } from "react-icons/ti";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 
-
+import { FiLogOut } from 'react-icons/fi';
+// Usage: <MdLogOut style={{ color: 'white', fontSize: '20px' }} />
 // K6 predefined functions list
 const k6Functions = [
   { name: "randomString(length)", description: "Generates a random string of the given length." },
@@ -154,7 +155,7 @@ class App extends React.Component {
     return (
       <div style={{
         // backgroundColor: "#090D2B",
-            background:"linear-gradient(145deg, rgb(37, 53, 79), rgb(11, 14, 19))",
+            background:"linear-gradient(135deg, rgb(45, 55, 72), #475a80))",
 
         minHeight: "100vh",
         display: "flex",
@@ -308,7 +309,7 @@ class App extends React.Component {
     return (
       <div style={{
         minHeight: "100vh",
-        background: "linear-gradient(145deg, #1a202c, #0d1117)",
+        background: "linear-gradient(135deg, rgb(45, 55, 72), #475a80)",
         color: "#fff",
         display: "flex",
         flexDirection: "column",
@@ -433,37 +434,57 @@ class App extends React.Component {
       
       {this.state.role === "admin" && (
         <>
-          <span>|</span>
-          <div style={{ display: "flex", alignItems: "center" }}>
-            <span 
-              onClick={() => this.setState({ showAddUserModal: true })}
-              style={{ cursor: "pointer", display: "flex", alignItems: "center"}}
-            >
-              {/* <span role="img" aria-label="add user" style={{ marginRight: "4px" }}>👤</span> */}
-              {/* Add User */}
-              <TiUserAdd />
-
-            </span>
-          </div>
+ <span>|</span>
+<div style={{ display: "flex", alignItems: "center" }}>
+  <span 
+    onClick={() => this.setState({ showAddUserModal: true })}
+    style={{ 
+      cursor: "pointer", 
+      display: "flex", 
+      alignItems: "center",
+      fontSize: "24px",  // Adjust this value to change the size
+      padding: "8px",    // Add some padding for better click area
+    }}
+  >
+    <TiUserAdd style={{ fontSize: "inherit" }} />
+  </span>
+</div>
         </>
       )}
-      
+       <span>|</span>
+
       
       {/* Logout Link */}
-      <div style={{ display: "flex", alignItems: "center" }}>
-        <span 
-          onClick={() => {
-            sessionStorage.removeItem("authToken");
-            this.setState({ isLoggedIn: false, token: null });
-            this.props.system?.authActions?.logout();
-          }}
-          style={{ cursor: "pointer", display: "flex", alignItems: "center" }}
-        >
-          <span role="img" aria-label="logout" style={{ marginRight: "4px" }}>🚪</span>
-          Logout
-        </span>
+<div style={{ display: "flex", alignItems: "center" }}>
+  <span 
+    onClick={() => {
+      sessionStorage.removeItem("authToken");
+      this.setState({ isLoggedIn: false, token: null });
+      this.props.system?.authActions?.logout();
+    }}
+    style={{ 
+      cursor: "pointer",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      width: '40px',
+      height: '40px',
+      borderRadius: '6px',
+      transition: 'all 0.2s ease'
+    }}
+    onMouseOver={e => e.currentTarget.style.borderColor = '#e53e3e'}
+    onMouseOut={e => e.currentTarget.style.borderColor = '#2d3748'}
+    title="Logout"
+  >
+    <FiLogOut 
+      style={{ 
+        color: 'white',
+        fontSize: '20px'
+      }} 
+    />
+  </span>
+</div>
       </div>
-    </div>
 
     {/* K6 Function List Display */}
     {showK6Functions && (

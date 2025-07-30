@@ -400,17 +400,19 @@ if (allSpecs.length) {
                 
                 if (canDelete) {
                   return (
-                    <Button 
-                      className="delete-btn"
-                      onClick={() => {
-                        if (window.confirm(`Are you sure you want to delete "${currentSpec.name || currentSpec.filename}"?`)) {
-                          this.deleteSpec();
-                        }
-                      }}
-                      title={`Delete ${currentSpec.name || currentSpec.filename}`}
-                    > 
-                      <FaTrash />
-                    </Button>
+<Button 
+  className="delete-btn"
+  onClick={() => {
+    if (window.confirm(`Are you sure you want to delete "${currentSpec.name || currentSpec.filename}"?`)) {
+      this.deleteSpec();
+    }
+  }}
+  title={`Delete ${currentSpec.name || currentSpec.filename}`}
+>
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M19 7L18.1327 19.1425C18.0579 20.1891 17.187 21 16.1379 21H7.86211C6.81296 21 5.94208 20.1891 5.86732 19.1425L5 7M10 11V17M14 11V17M15 7V4C15 3.44772 14.5523 3 14 3H10C9.44772 3 9 3.44772 9 4V7M4 7H20" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+  </svg>
+</Button>
                   );
                 }
                 return null;
@@ -449,22 +451,44 @@ if (allSpecs.length) {
   }
 }
 
-
 const styles = `
   .swagger-ui .delete-btn {
-    background: linear-gradient(135deg,rgb(231, 32, 14), rgb(102, 63, 37)) !important;
+    background:linear-gradient(135deg, rgb(35, 62, 109), #0d3d9e) !important;
+    width: 40px !important;
+    height: 38px !important;
+    border: 1px solid #2d3748 !important;
     color: white !important;
-    border: none;
-    border-radius: 5px;
-    padding: 8px;
-  
+    border-radius: 6px !important;
+    padding: 0 !important;
+    cursor: pointer !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4) !important;
+    transition: all 0.2s ease !important;
+        margin-inline: -3%;
+  }
+
+  .swagger-ui .delete-btn:hover {
+    border-color: #e53e3e !important;
+  }
+
+  .swagger-ui .delete-btn > svg {
+    margin: 0 !important;
   }
 
 
-
-
   .swagger-ui .upload-btn {
-    background: linear-gradient(135deg, #354a72, rgb(24, 47, 92)) !important;
+    background:linear-gradient(135deg, rgb(35, 62, 109), #0d3d9e) !important;
+        border-radius: 6px !important;
+            cursor: pointer !important;
+    border: 1px solid #2d3748 !important;
+
+
+  }
+
+    .swagger-ui .upload-btn:hover {
+    border-color:rgb(12, 124, 223) !important;
   }
 
   .swagger-ui .upload-btn > svg {

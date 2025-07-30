@@ -3,6 +3,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { removeApiEntry } from '../plugins/oas3/actions';
 import LaunchTestModal from './LaunchTestModal';
 import ChooseExecutionOption from './ChooseExecutionOption';
+import { FaPlus } from 'react-icons/fa'; // Using Font Awesome plus icon
 
 const HTTP_METHODS = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'];
 const STORAGE_KEY = 'selectedApis';
@@ -364,7 +365,7 @@ const mqttSavedApis = savedApis.filter(item => item.method === 'MQTT');
   onClick={() => setTokenModalOpen(true)}
   style={{
     padding: '8px 16px',
-    background: 'linear-gradient(135deg, rgb(45, 55, 72), #475a80)',
+    background: 'linear-gradient(135deg, rgb(45, 55, 72), #475a80)  ',
     color: '#e2e8f0',
     border: `1px solid ${hasToken ? '#2f70f5' : '#4a5568'}`,
     borderRadius: '8px',
@@ -378,11 +379,11 @@ const mqttSavedApis = savedApis.filter(item => item.method === 'MQTT');
     boxShadow: '0 1px 3px rgba(0,0,0,0.2)'
   }}
   onMouseEnter={(e) => {
-    e.target.style.background = 'linear-gradient(135deg, #3b4658, #2d3748)';
+    e.target.style.background = 'linear-gradient(135deg, rgb(45, 55, 72), #475a80)';
     e.target.style.borderColor = hasToken ? '#2f70f5' : '#667eea';
   }}
   onMouseLeave={(e) => {
-    e.target.style.background = 'linear-gradient(135deg, #2d3748, #1a202c)';
+    e.target.style.background = 'linear-gradient(135deg, rgb(45, 55, 72), #475a80)';
     e.target.style.borderColor = hasToken ? '#2f70f5' : '#4a5568';
   }}
 >
@@ -693,43 +694,46 @@ const mqttSavedApis = savedApis.filter(item => item.method === 'MQTT');
 
                     
                   })}
-
-                    <button
-              style={{
-                padding: '7px 11px',
-                background: 'linear-gradient(135deg, rgb(45, 55, 72), #475a80)',
-                color: '#ffffff',
-                border: 'none',
-                borderRadius: '6px',
-                fontSize: '18px',
-                position: 'inherit',
-                marginLeft: '35%',
-                top: '607px',
-                right: '208px',
-                fontWeight: 500,
-                height: '6%',
-                cursor: 'pointer',
-                transition: 'background-color 0.2s ease',
-                boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
-              }}
-              onClick={() => setModalOpen(true)}
-              onMouseEnter={(e) => {
-                e.target.style.backgroundColor = '#2c974b';
-              }}
-              onMouseLeave={(e) => {
-                e.target.style.backgroundColor = '#2f70f5';
-              }}
-              onMouseDown={(e) => {
-                e.target.style.backgroundColor = '#298e46';
-                e.target.style.boxShadow = 'inset 0 1px 3px rgba(0, 0, 0, 0.1)';
-              }}
-              onMouseUp={(e) => {
-                e.target.style.backgroundColor = '#2c974b';
-                e.target.style.boxShadow = '0 1px 3px rgba(0, 0, 0, 0.1)';
-              }}
-            >
-              Add APIs to Test
-            </button>
+<button
+  style={{
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: '8px 16px',
+    background: 'linear-gradient(135deg, rgb(45, 55, 72), #475a80)',
+    color: '#ffffff',
+    border: 'none',
+    borderRadius: '6px',
+    fontSize: '14px',
+    fontWeight: 500,
+    cursor: 'pointer',
+    transition: 'all 0.2s ease',
+    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+    height: '36px', // Standard button height
+    marginLeft: '35%',
+    position: 'inherit',
+    top: '607px',
+    right: '208px'
+  }}
+  onClick={() => setModalOpen(true)}
+  onMouseEnter={(e) => {
+    e.currentTarget.style.background = '#2c974b';
+  }}
+  onMouseLeave={(e) => {
+    e.currentTarget.style.background = 'linear-gradient(135deg, rgb(45, 55, 72), #475a80)';
+  }}
+  onMouseDown={(e) => {
+    e.currentTarget.style.background = '#298e46';
+    e.currentTarget.style.boxShadow = 'inset 0 1px 3px rgba(0, 0, 0, 0.1)';
+  }}
+  onMouseUp={(e) => {
+    e.currentTarget.style.background = '#2c974b';
+    e.currentTarget.style.boxShadow = '0 1px 3px rgba(0, 0, 0, 0.1)';
+  }}
+>
+  <FaPlus style={{ marginRight: '8px', fontSize: '14px' }} />
+ Create Scenario
+ </button>
                 </ul>
               )
             ) : (
