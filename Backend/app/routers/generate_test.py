@@ -243,7 +243,6 @@ spec:
       protocol: TCP
 """.strip()
 
-
 # def generate_service_yaml(name: str, namespace: str = "default", service_type: str = "LoadBalancer") -> str:
 #     return f"""
 # apiVersion: v1
