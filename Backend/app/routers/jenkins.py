@@ -44,6 +44,30 @@ async def fetch_build_status(session, auth, build_number):
         logger.error(f"Error fetching status: {e}")
         return None
 
+def get_load_balancer_ips() -> list[str]:
+    try:
+        output = subprocess.check_output(
+            ["kubectl", "get", "svc", "-A", "-o", "json"],
+            stderr=subprocess.STDOUT
+        )
+        svc_data = json.loads(output)
+        lb_ips = []
+        for item in svc_data["items"]:
+            if item["spec"].get("type") == "LoadBalancer":
+                ingress = item.get("status", {}).get("loadBalancer", {}).get("ingress", [])
+                for entry in ingress:
+                    ip = entry.get("ip") or entry.get("hostname")
+                    if ip:
+                        lb_ips.append(ip)
+        return lb_ips
+    except subprocess.CalledProcessError as e:
+        logger.error(f"Error fetching services: {e.output.decode()}")
+        return []
+    except Exception as e:
+        logger.error(f"Unexpected error parsing services: {e}")
+        return []
+    
+
 def extract_ips_from_logs(log_text: str) -> dict:
     result = {}
 
@@ -291,6 +315,16 @@ async def run_k6_test_websocket(websocket: WebSocket):
         # Final result
         if status == "SUCCESS":
             await websocket.send_text("✅ SUCCESS")
+
+            # 🔍 Get LoadBalancer IPs
+            lb_ips = get_load_balancer_ips()
+            if lb_ips:
+                for ip in lb_ips:
+                    await websocket.send_text(f"🌐 LoadBalancer EXTERNAL-IP: {ip}")
+            else:
+                await websocket.send_text("⚠️ No LoadBalancer EXTERNAL-IP found.")
+
+            # Update cache
             cluster_status_cache.update({
                 "cluster_exists": True,
                 "job_number": build_number,
