@@ -44,32 +44,6 @@ async def fetch_build_status(session, auth, build_number):
         logger.error(f"Error fetching status: {e}")
         return None
 
-
-def get_load_balancer_ips() -> list[str]:
-    try:
-        output = subprocess.check_output(
-            ["kubectl", "get", "svc", "-A", "-o", "json"],
-            stderr=subprocess.STDOUT
-        )
-        logger.info("✅ Raw kubectl output received")
-        svc_data = json.loads(output)
-        lb_ips = []
-        for item in svc_data["items"]:
-            if item.get("spec", {}).get("type") == "LoadBalancer":
-                ingress = item.get("status", {}).get("loadBalancer", {}).get("ingress", [])
-                for entry in ingress:
-                    ip = entry.get("ip") or entry.get("hostname")
-                    if ip:
-                        lb_ips.append(ip)
-        logger.info(f"🔍 Found LoadBalancer IPs: {lb_ips}")
-        return lb_ips
-    except subprocess.CalledProcessError as e:
-        logger.error(f"❌ Error fetching services: {e.output.decode()}")
-        return []
-    except Exception as e:
-        logger.error(f"❌ Unexpected error parsing services: {e}")
-        return []
-
 def extract_ips_from_logs(log_text: str) -> dict:
     result = {}
 
@@ -188,6 +162,14 @@ async def run_k6_test_websocket(websocket: WebSocket):
                     if pod_name not in sent_pod_names:
                         await websocket.send_text(f"POD_NAME= {pod_name}")
                         sent_pod_names.add(pod_name)
+                
+                lb_service_matches = re.findall(
+                    r"(?P<name>\S+)\s+LoadBalancer\s+\S+\s+(?P<external_ip>\d+\.\d+\.\d+\.\d+)",
+                    log_text
+                )
+                for name, external_ip in lb_service_matches:
+                    await websocket.send_text(f"SERVICE= {name}:{external_ip}")
+
 
             # Break if build completed
             if status in ("SUCCESS", "FAILURE", "ABORTED"):
@@ -199,16 +181,6 @@ async def run_k6_test_websocket(websocket: WebSocket):
         # Final result
         if status == "SUCCESS":
             await websocket.send_text("✅ SUCCESS")
-
-            # 🔍 Get LoadBalancer IPs
-            lb_ips = get_load_balancer_ips()
-            if lb_ips:
-                for ip in lb_ips:
-                    await websocket.send_text(f"🌐 LoadBalancer EXTERNAL-IP: {ip}")
-            else:
-                await websocket.send_text("⚠️ No LoadBalancer EXTERNAL-IP found.")
-
-            # Update cache
             cluster_status_cache.update({
                 "cluster_exists": True,
                 "job_number": build_number,
