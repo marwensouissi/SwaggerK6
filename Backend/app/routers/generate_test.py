@@ -233,14 +233,16 @@ metadata:
   name: {name}-dashboard
   namespace: {namespace}
 spec:
-  type: NodePort
+  type: LoadBalancer
   selector:
-    test-name: {name}
+    k6-test-run: {name}
   ports:
-    - port: 5665
-      targetPort: 5665
-      nodePort: 30080
+    - name: http
+      port: 5665
+      targetPort: dashboard
+      protocol: TCP
 """.strip()
+
 
 # def generate_service_yaml(name: str, namespace: str = "default", service_type: str = "LoadBalancer") -> str:
 #     return f"""
