@@ -1,0 +1,25 @@
+swagger-8ee7d683-test-1-lfnr9             1/1     Running            0                4m52s
+swagger-8ee7d683-test-initializer-cmgfl   0/1     Completed          0                4m55s
+swagger-8ee7d683-test-starter-bbnwk       0/1     Completed          0                4m50s
+testcurl                                  0/1     CrashLoopBackOff   31 (2m28s ago)   3h8m
+kian@192 ~ % kubectl get svc
+NAME                              TYPE           CLUSTER-IP       EXTERNAL-IP      PORT(S)          AGE
+kubernetes                        ClusterIP      10.245.0.1       <none>           443/TCP          5h34m
+swagger-8ee7d683-test-dashboard   LoadBalancer   10.245.132.185   209.38.176.128   5665:30096/TCP   5m1s
+swagger-8ee7d683-test-service-1   ClusterIP      10.245.43.59     <none>           6565/TCP         4m58s
+kian@192 ~ % kubectl get nodes -o wide
+NAME                STATUS   ROLES    AGE     VERSION   INTERNAL-IP   EXTERNAL-IP     OS-IMAGE                         KERNEL-VERSION   CONTAINER-RUNTIME
+worker-pool-lhxi3   Ready    <none>   5h31m   v1.33.1   10.114.0.11   167.99.246.32   Debian GNU/Linux 12 (bookworm)   6.1.0-35-amd64   containerd://1.6.33
+worker-pool-lhxin   Ready    <none>   5h31m   v1.33.1   10.114.0.13   161.35.25.11    Debian GNU/Linux 12 (bookworm)   6.1.0-35-amd64   containerd://1.6.33
+kian@192 ~ % kubectl get pod swagger-8ee7d683-test-1-lfnr9 --show-labels
+NAME                            READY   STATUS    RESTARTS   AGE     LABELS
+swagger-8ee7d683-test-1-lfnr9   1/1     Running   0          9m46s   app=k6,batch.kubernetes.io/controller-uid=b6ec1815-9c3f-41e6-90a6-35f77b8409bb,batch.kubernetes.io/job-name=swagger-8ee7d683-test-1,controller-uid=b6ec1815-9c3f-41e6-90a6-35f77b8409bb,job-name=swagger-8ee7d683-test-1,k6_cr=swagger-8ee7d683-test,runner=true
+kian@192 ~ % cd /private/var/jenkins/workspace/DevOps/K6/cluster-builder-k6                                             kian@192 cluster-builder-k6 % nano service.yaml
+kian@192 cluster-builder-k6 % kubectl apply -f service.yaml
+service/swagger-8ee7d683-test-service created
+kian@192 cluster-builder-k6 % kubectl get svc
+NAME                              TYPE           CLUSTER-IP       EXTERNAL-IP      PORT(S)          AGE
+kubernetes                        ClusterIP      10.245.0.1       <none>           443/TCP          5h43m
+swagger-8ee7d683-test-dashboard   LoadBalancer   10.245.132.185   209.38.176.128   5665:30096/TCP   14m
+swagger-8ee7d683-test-service     LoadBalancer   10.245.134.63    159.223.251.13   5665:30167/TCP   40s
+swagger-8ee7d683-test-service-1   ClusterIP      10.245.43.59     <none>           6565/TCP         14m

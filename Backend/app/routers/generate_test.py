@@ -230,17 +230,14 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: {name}-dashboard
-  namespace: {namespace}
+  name: {name}-service
 spec:
   type: LoadBalancer
   selector:
-    k6-test-run: {name}
+    job-name: {name}-1
   ports:
-    - name: http
-      port: 5665
-      targetPort: dashboard
-      protocol: TCP
+    - port: 5665
+      targetPort: 5665
 """.strip()
 
 
