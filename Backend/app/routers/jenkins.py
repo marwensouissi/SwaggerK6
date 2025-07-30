@@ -120,6 +120,8 @@ async def run_k6_test_websocket(websocket: WebSocket):
     found_argocd_ip = None
     found_loki_ip = None
     sent_pod_names = set()
+    sent_services = set()
+
 
     try:
         # ✅ One-time initial log fetch (from start=0)
@@ -168,7 +170,10 @@ async def run_k6_test_websocket(websocket: WebSocket):
                     log_text
                 )
                 for name, external_ip in lb_service_matches:
-                    await websocket.send_text(f"SERVICE= {name}:{external_ip}")
+                    service_key = f"{name}:{external_ip}"
+                    if service_key not in sent_services:
+                        await websocket.send_text(f"SERVICE= {service_key}")
+                        sent_services.add(service_key)
 
 
             # Break if build completed
