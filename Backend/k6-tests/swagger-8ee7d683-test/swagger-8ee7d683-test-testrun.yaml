@@ -23,14 +23,11 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: swagger-8ee7d683-test-dashboard
-  namespace: default
+  name: swagger-8ee7d683-test-service
 spec:
   type: LoadBalancer
   selector:
-    k6-test-run: swagger-8ee7d683-test
+    job-name: swagger-8ee7d683-test-1
   ports:
-    - name: http
-      port: 5665
-      targetPort: dashboard
-      protocol: TCP
+    - port: 5665
+      targetPort: 5665
