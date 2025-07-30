@@ -44,6 +44,7 @@ async def fetch_build_status(session, auth, build_number):
         logger.error(f"Error fetching status: {e}")
         return None
 
+
 def get_load_balancer_ips() -> list[str]:
     try:
         output = subprocess.check_output(
@@ -66,7 +67,6 @@ def get_load_balancer_ips() -> list[str]:
     except Exception as e:
         logger.error(f"Unexpected error parsing services: {e}")
         return []
-    
 
 def extract_ips_from_logs(log_text: str) -> dict:
     result = {}
