@@ -1,0 +1,34 @@
+apiVersion: k6.io/v1alpha1
+kind: TestRun
+metadata:
+  name: mqtt-0d97227f-test
+  namespace: default
+  labels:
+    test-name: mqtt-0d97227f-test
+spec:
+  parallelism: 1
+  script:
+    configMap:
+      name: mqtt-0d97227f-test
+      file: mqtt-0d97227f-test.tar
+  runner:
+    image: ndammakian/xk6-images:1.0
+    imagePullPolicy: IfNotPresent
+    env:
+      - name: K6_WEB_DASHBOARD
+        value: "true"
+    ports:
+      - containerPort: 5665
+        name: dashboard
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mqtt-0d97227f-test-service
+spec:
+  type: LoadBalancer
+  selector:
+    job-name: mqtt-0d97227f-test-1
+  ports:
+    - port: 5665
+      targetPort: 5665

@@ -144,7 +144,17 @@ def generate_test_file(
 
 def k6_archive(js_file_path: Path, output_dir: Path) -> Path:
     # Step 1: Run archive command (creates archive.tar)
-    cmd = ["k6", "archive", str(js_file_path)]
+    if "mqtt" in js_file_path.name:
+        # Use Docker xk6 image for MQTT tests
+        cmd = [
+            "docker", "run", "--rm",
+            "-v", f"{output_dir.absolute()}:/scripts",
+            "-w", "/scripts",
+            "ndammakian/xk6-images:1.0",
+            "archive", js_file_path.name
+        ]
+    else:
+        cmd = ["k6", "archive", str(js_file_path)]
     result = subprocess.run(cmd, cwd=output_dir, capture_output=True)
 
     if result.returncode != 0:
@@ -156,7 +166,6 @@ def k6_archive(js_file_path: Path, output_dir: Path) -> Path:
         raise FileNotFoundError("Expected 'archive.tar' not found after k6 archive")
 
     renamed_tar = output_dir / f"{js_file_path.stem}.tar"
-    
     # 🧹 Clean up if target tar already exists
     if renamed_tar.exists():
         renamed_tar.unlink()  # or use renamed_tar.unlink(missing_ok=True) in Python 3.8+
