@@ -1,0 +1,33 @@
+apiVersion: k6.io/v1alpha1
+kind: TestRun
+metadata:
+  name: swagger-4cf1ed90-test
+  namespace: default
+  labels:
+    test-name: swagger-4cf1ed90-test
+spec:
+  parallelism: 1
+  script:
+    configMap:
+      name: swagger-4cf1ed90-test
+      file: swagger-4cf1ed90-test.tar
+  runner:
+    env:
+      - name: K6_WEB_DASHBOARD
+        value: "true"
+    ports:
+      - containerPort: 5665
+        name: dashboard
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: swagger-4cf1ed90-test-service
+spec:
+  type: LoadBalancer
+  selector:
+    job-name: swagger-4cf1ed90-test-1
+  ports:
+    - port: 5665
+      targetPort: 5665
