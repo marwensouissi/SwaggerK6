@@ -197,13 +197,14 @@ spec:
       name: {name}
       file: {name}.tar
   runner:
+    image: k6-mqtt-dashboard
+    imagePullPolicy: Never
     env:
       - name: K6_WEB_DASHBOARD
         value: "true"
     ports:
       - containerPort: 5665
         name: dashboard
-
 ---
 apiVersion: v1
 kind: Service
@@ -216,6 +217,7 @@ spec:
   ports:
     - port: 5665
       targetPort: 5665
+
 """.strip()
 
 
