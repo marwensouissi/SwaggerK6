@@ -198,7 +198,7 @@ spec:
       file: {name}.tar
   runner:
     image: k6-mqtt-dashboard
-    imagePullPolicy: Never
+    imagePullPolicy: Allways
     env:
       - name: K6_WEB_DASHBOARD
         value: "true"
