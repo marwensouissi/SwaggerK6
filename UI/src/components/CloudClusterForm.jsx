@@ -95,13 +95,6 @@ ws.onmessage = (event) => {
     }
     return prev;
   });
-  console.log("📬 ", filename);
-  console.log("📬 ", filename);
-  console.log("📬 ", filename);
-  console.log("📬 ", filename);
-  console.log("📬 ", filename);
-  console.log("📬 ", filename);
-
   
     if (message.includes("ArgoCD IP")) {
       const match = message.match(/ArgoCD IP:\s*([\d.]+)/);

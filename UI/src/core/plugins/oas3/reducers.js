@@ -55,42 +55,39 @@ export default {
       existingParams.merge(fromJS(params))
     )
   },
-[UPDATE_REQUEST_BODY_VALUE]: (state, { payload: { value, pathMethod } }) => {
-  const [path, method] = pathMethod.split(" ")
-  const keyPath = ["requestData", path, method, "bodyValue"]
-
-  const currentVal = state.getIn(keyPath)
-
-  // If value is a string or a plain object, do shallow equality check
-  if (!Map.isMap(value)) {
-    if (currentVal === value) {
-      return state // No change needed
+  [UPDATE_REQUEST_BODY_VALUE]: (state, { payload: { value, pathMethod } }) => {
+    let [path, method] = pathMethod
+    const removedKey = `${path}|${method}`
+  
+    // ⛔️ Skip if this was removed intentionally
+    const removedApis = state.get("removedApis", Set())
+    if (removedApis.has(removedKey)) {
+      console.log("API was removed intentionally, not recreating:", path, method)
+      return state
     }
-    return state.setIn(keyPath, value)
-  }
-
-  // If current value is not a Map, replace it entirely
-  if (!Map.isMap(currentVal)) {
+  
+    console.log('Updating request body for', path, method)
+  
+    if (!Map.isMap(value)) {
+      return state.setIn(["requestData", path, method, "bodyValue"], value)
+    }
+  
+    let currentVal = state.getIn(["requestData", path, method, "bodyValue"]) || Map()
+    if (!Map.isMap(currentVal)) {
+      currentVal = Map()
+    }
+  
+    let newVal = currentVal
+    const [...valueKeys] = value.keys()
+    valueKeys.forEach((valueKey) => {
+      let valueKeyVal = value.getIn([valueKey])
+      newVal = newVal.setIn([valueKey, "value"], valueKeyVal)
+    })
+  
     return state
-      .setIn(keyPath, value)
-      .updateIn(["removedApis"], Set(), (set) => set.delete(`${path}|${method}`))
-  }
-
-  // Both are Maps: check equality first
-  if (currentVal.equals(value)) {
-    return state // Avoid unnecessary update
-  }
-
-  // Merge only changed keys (deep merge if needed)
-  const mergedVal = currentVal.mergeDeepWith((oldVal, newVal) => {
-    return oldVal === newVal ? oldVal : newVal
-  }, value)
-
-  return state
-    .setIn(keyPath, mergedVal)
-    .updateIn(["removedApis"], Set(), (set) => set.delete(`${path}|${method}`))
-},
-
+      .setIn(["requestData", path, method, "bodyValue"], newVal)
+      .updateIn(["removedApis"], Set(), set => set.delete(removedKey)) // clean up if re-added
+  },
   [SET_REQUEST_FUNCTION_NAME]: (state, { payload: { pathMethod, functionName } }) => {
     const [path, method] = pathMethod
     return state.setIn(["requestData", path, method, "functionName"], functionName)

@@ -34,6 +34,12 @@ const [hasToken, setHasToken] = useState(false);
   const [tokenInput, setTokenInput] = useState('');
 
   // Initialize token from session storage
+  useEffect(() => {
+    const token = sessionStorage.getItem('authToken') || '';
+    setTokenInput("");
+    setHasToken(false);
+
+  }, []);
 
   // Update handleSaveToken to save to localStorage as AssignedUserToken
   const handleSaveToken = () => {
@@ -125,11 +131,9 @@ const apiData = useSelector((state) => {
 
     for (const [apiPath, methods] of Object.entries(jsData)) {
       for (const [method, methodData] of Object.entries(methods)) {
-        // Force method to 'MQTT' for the specific MQTT test API path
-        const isMqttApi = apiPath === '/run-mqtt-test/{VU_COUNT}/{duration}/{broker}/{port}/{topic}/{password}';
         results.push({
           api: apiPath,
-          method: isMqttApi ? 'POST' : method.toUpperCase(),
+          method: method.toUpperCase(),
           bodyValue: methodData.bodyValue || null,
           functionName: methodData.functionName || '',
           params: methodData.params || {},
@@ -137,17 +141,12 @@ const apiData = useSelector((state) => {
       }
     }
 
-    console.log('[apiData]', results); // Debug: log apiData every time selector runs
     return results;
   });
 
   // Split apiData into HTTP and MQTT
   const httpApis = apiData.filter(item => HTTP_METHODS.includes(item.method));
-  const mqttApis = apiData.filter(item =>
-    item.method === 'POST' &&
-    item.api === '/run-mqtt-test/{VU_COUNT}/{duration}/{broker}/{port}/{topic}/{password}' &&
-    !!item.functionName
-);
+  const mqttApis = apiData.filter(item => item.method === 'MQTT');
 
   const handleRemove = (api, method) => {
     dispatch(removeApiEntry(api, method.toLowerCase()));
@@ -258,13 +257,25 @@ const handleRemoveLocal = (api, method, functionName) => {
     const fetchStatuses = async () => {
       const statusObj = {};
       const checkingObj = {};
-      // Only update state if values actually change
-      if (JSON.stringify(mqttStatus) !== JSON.stringify(statusObj)) {
-        setMqttStatus(statusObj);
-      }
-      if (JSON.stringify(isCheckingMqtt) !== JSON.stringify(checkingObj)) {
-        setIsCheckingMqtt(checkingObj);
-      }
+      await Promise.all(mqttApis.map(async ({ functionName }) => {
+        if (!functionName) return;
+        checkingObj[functionName] = true;
+        try {
+          const response = await fetch(`http://localhost:6060/mqtt/check-mqtt?filename=${encodeURIComponent(functionName)}`);
+          if (response.ok) {
+            const data = await response.json();
+            statusObj[functionName] = data.injected;
+          } else {
+            statusObj[functionName] = false;
+          }
+        } catch (e) {
+          statusObj[functionName] = false;
+        } finally {
+          checkingObj[functionName] = false;
+        }
+      }));
+      setMqttStatus(statusObj);
+      setIsCheckingMqtt(checkingObj);
     };
     if (mqttApis.length > 0) fetchStatuses();
   }, [mqttApis]);
@@ -313,12 +324,11 @@ const getFileName = (filePath) => {
       setSavedApis(loadFromLocalStorage());
     }, 1000); // Poll every second
     return () => clearInterval(interval);
-  }, []); // Only run once on mount
+  }, []);
 
   // Filter savedApis for HTTP and MQTT tabs
-const httpSavedApis = savedApis.filter(item => HTTP_METHODS.includes(item.method) && item.api !== '/run-mqtt-test/{VU_COUNT}/{duration}/{broker}/{port}/{topic}/{password}');
-const mqttSavedApis = savedApis.filter(item => item.method === 'POST' &&
-  item.api === '/run-mqtt-test/{VU_COUNT}/{duration}/{broker}/{port}/{topic}/{password}' );
+const httpSavedApis = savedApis.filter(item => HTTP_METHODS.includes(item.method));
+const mqttSavedApis = savedApis.filter(item => item.method === 'MQTT');
 
   return (
     <div style={{
@@ -909,7 +919,7 @@ const mqttSavedApis = savedApis.filter(item => item.method === 'POST' &&
                             transition: 'all 0.2s ease',
                             marginRight: '8px'
                           }}
-                          onClick={() => handleRemoveLocal(api, method, functionName)}
+                          onClick={() => handleRemove(api, method)}
                           onMouseEnter={(e) => {
                             e.target.style.backgroundColor = '#d73a49';
                             e.target.style.color = 'white';
@@ -925,7 +935,29 @@ const mqttSavedApis = savedApis.filter(item => item.method === 'POST' &&
                         {checking ? (
                           <span style={{marginLeft: '8px', color: '#416fd3'}}>Checking...</span>
                         ) : !injected ? (
-                          null
+                          <button
+                            style={{
+                              marginTop: '12px',
+                              padding: '6px 12px',
+                              backgroundColor: '#416fd3',
+                              color: '#fff',
+                              border: '1px solid #416fd3',
+                              borderRadius: '6px',
+                              cursor: 'pointer',
+                              fontSize: '13px',
+                              fontWeight: 500,
+                              transition: 'all 0.2s ease'
+                            }}
+                            onClick={handleInjectMQTT}
+                            onMouseEnter={(e) => {
+                              e.target.style.backgroundColor = '#0051ff';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.target.style.backgroundColor = '#416fd3';
+                            }}
+                          >
+                            Inject MQTT
+                          </button>
                         ) : (
                           <span style={{marginLeft: '8px', color: '#2f70f5', fontWeight: 500}}>Injected</span>
                         )}
