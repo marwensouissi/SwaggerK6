@@ -102,7 +102,7 @@ def inject_mqtt_to_specified_swagger(filename: str = Query(..., description="Nam
         # MQTT endpoint definition
         mqtt_path = {
             "/run-mqtt-test/{VU_COUNT}/{duration}/{broker}/{port}/{topic}/{password}": {
-                "mqtt": {
+                "post": {
                     "tags": ["mqtt-controller"],
                     "summary": "Run MQTT Load Test via Path Params and Credentials List",
                     "description": "Runs MQTT load test using parameters passed in the URL path and a list of credentials in the request body.",
@@ -177,10 +177,11 @@ def check_mqtt_injection(filename: str = Query(..., description="Name of the Swa
 
         mqtt_path = "/run-mqtt-test/{VU_COUNT}/{duration}/{broker}/{port}/{topic}/{password}"
         injected = False
+        # Only set injected=True if the path exists and the method is 'post'
         if mqtt_path in paths:
             methods = list(paths[mqtt_path].keys())
             logging.info(f"Methods for MQTT path: {methods}")
-            if "mqtt" in methods or "post" in methods or "get" in methods:
+            if "post" in methods:
                 injected = True
         logging.info(f"MQTT injected: {injected}")
         return {"injected": injected}
