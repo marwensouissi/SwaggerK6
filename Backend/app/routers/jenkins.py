@@ -8,6 +8,16 @@ import subprocess
 import re
 import time
 
+from app.config.config import (
+    JENKINS_USER,
+    JENKINS_TOKEN,
+    JENKINS_URL,
+    JENKINS_JOB_PATH,
+    JENKINS_JOB_PATH_CHECK,
+    JENKINS_JOB_PATH_DESTROY
+)
+
+
 router = APIRouter(prefix="/jenkins", tags=["jenkins"])
 
 TRIGGER_TOKEN = "cluster-builder"
@@ -16,7 +26,7 @@ TRIGGER_TOKEN_DESTROY = "cluster-destroyer"
 JENKINS_JOB_PATH_CHECK = "/job/DevOps/job/K6/job/cluster-checker"
 JENKINS_JOB_PATH_DESTROY = "/job/DevOps/job/K6/job/cluster-destroyer"
 JENKINS_JOB_PATH = "/job/DevOps/job/K6/job/cluster-builder-k6"
-USERNAME = "Marouan"
+JENKINS_USER = "Marouan"
 API_TOKEN = "11f95e13898dfdb25940bd7ca41eba689b"
 JENKINS_URL = "http://localhost:8090"
 
@@ -89,7 +99,7 @@ async def run_k6_test_websocket(websocket: WebSocket):
         return await websocket.close()
 
     session = requests.Session()
-    auth = (USERNAME, API_TOKEN)
+    auth = (JENKINS_USER, API_TOKEN)
 
     # Trigger Jenkins job
     resp = session.post(f"{JENKINS_URL}{JENKINS_JOB_PATH}/buildWithParameters", params=params, auth=auth, allow_redirects=False)
@@ -205,7 +215,7 @@ async def run_k6_test_websocket(websocket: WebSocket):
 
 def perform_cluster_check_once():
     """Runs once at startup and caches the cluster existence status."""
-    auth = (USERNAME, API_TOKEN)
+    auth = (JENKINS_USER, API_TOKEN)
     trigger_url = f"{JENKINS_URL}{JENKINS_JOB_PATH_CHECK}/build?token={TRIGGER_TOKEN_CHECK}"
 
     try:
@@ -282,7 +292,7 @@ def get_or_trigger_cluster():
 
     # Step 2: If no cluster found, trigger creation
     if cluster_status_cache["cluster_exists"] is False:
-        auth = (USERNAME, API_TOKEN)
+        auth = (JENKINS_USER, API_TOKEN)
         trigger_url = f"{JENKINS_URL}{JENKINS_JOB_PATH}/buildWithParameters"
         params = {
             "token": TRIGGER_TOKEN,
@@ -321,7 +331,7 @@ async def destroy_cluster():
     """
     Triggers the Jenkins job to destroy the existing cluster.
     """
-    auth = (USERNAME, API_TOKEN)
+    auth = (JENKINS_USER, API_TOKEN)
     trigger_url = f"{JENKINS_URL}{JENKINS_JOB_PATH_DESTROY}/build?token={TRIGGER_TOKEN_DESTROY}"
 
     try:

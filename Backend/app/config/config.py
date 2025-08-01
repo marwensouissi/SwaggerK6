@@ -9,8 +9,10 @@ JWT_SECRET = os.getenv("JWT_SECRET")
 JWT_ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
 
 
-# Jenkins config
-JENKINS_URL = os.getenv("JENKINS_URL", "http://83.147.37.78:8090/bit-webhook-pullrequest/")
-JENKINS_USER = os.getenv("Marouan")
-JENKINS_TOKEN = os.getenv("11f95e13898dfdb25940bd7ca41eba689b")
-JENKINS_JOB_PATH = os.getenv("JENKINS_JOB_PATH", "/job/DevOps/job/K6/job/cluster-builder-k6/")
+
+JENKINS_USER = os.getenv("JENKINS_USER")
+JENKINS_TOKEN = os.getenv("JENKINS_TOKEN")
+JENKINS_URL = os.getenv("JENKINS_URL", "http://localhost:8090")
+JENKINS_JOB_PATH = os.getenv("JENKINS_JOB_PATH")
+JENKINS_JOB_PATH_CHECK = os.getenv("JENKINS_JOB_PATH_CHECK")
+JENKINS_JOB_PATH_DESTROY = os.getenv("JENKINS_JOB_PATH_DESTROY")

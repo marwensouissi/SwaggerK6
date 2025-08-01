@@ -1,0 +1,34 @@
+apiVersion: k6.io/v1alpha1
+kind: TestRun
+metadata:
+  name: swagger-02819b0e-test
+  namespace: default
+  labels:
+    test-name: swagger-02819b0e-test
+spec:
+  parallelism: 1
+  script:
+    configMap:
+      name: swagger-02819b0e-test
+      file: swagger-02819b0e-test.tar
+  runner:
+    image: ndammakian/xk6-images:1.0
+    imagePullPolicy: IfNotPresent
+    env:
+      - name: K6_WEB_DASHBOARD
+        value: "true"
+    ports:
+      - containerPort: 5665
+        name: dashboard
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: swagger-02819b0e-test-service
+spec:
+  type: LoadBalancer
+  selector:
+    job-name: swagger-02819b0e-test-1
+  ports:
+    - port: 5665
+      targetPort: 5665
