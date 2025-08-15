@@ -15,6 +15,8 @@ class ScenarioOut(BaseModel):
     class Config:
         orm_mode = True
  
+
+ 
 class TestCase(BaseModel):
     function: str
     method: str
@@ -46,3 +48,10 @@ class ClusterRequest(BaseModel):
     region: str
     size: str
     count: int = 1
+
+
+class ScenarioRead(BaseModel):
+    name: str
+
+    class Config:
+        from_attributes = True  # For Pydantic v2, replaces orm_mode

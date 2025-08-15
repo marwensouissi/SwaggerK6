@@ -7,6 +7,7 @@ const AddUserModal = ({ isOpen, onClose, onUserAdded = () => {}  }) => {
   const [userData, setUserData] = useState({
     username: "",
     password: "",
+    email: "",
     confirmPassword: ""
   });
   const [error, setError] = useState("");
@@ -49,6 +50,7 @@ const AddUserModal = ({ isOpen, onClose, onUserAdded = () => {}  }) => {
         },
         body: JSON.stringify({
           username: userData.username,
+          email: userData.email,
           password: userData.password
         }),
       });
@@ -190,6 +192,39 @@ const AddUserModal = ({ isOpen, onClose, onUserAdded = () => {}  }) => {
                 placeholder="Enter username"
               />
             </div>
+
+            <div style={{ marginBottom: "16px" }}>
+  <label
+    style={{
+      display: "block",
+      marginBottom: "8px",
+      fontSize: "14px",
+      color: "#a0aec0",
+      display: "flex",
+      alignItems: "center",
+      gap: "8px",
+    }}
+  >
+    <FiUsers size={16} />
+    Email
+  </label>
+  <input
+    type="email"
+    value={userData.email}
+    onChange={(e) => handleInputChange("email", e.target.value)}
+    style={{
+      width: "100%",
+      padding: "10px 12px",
+      borderRadius: "6px",
+      border: "1px solid #4a5568",
+      background: "#2d3748",
+      color: "#f7fafc",
+      fontSize: "14px",
+    }}
+    placeholder="Enter email"
+  />
+</div>
+
             
             <div style={{ marginBottom: "16px" }}>
               <label

@@ -107,6 +107,11 @@ async def run_k6_with_dashboard(file_path: Path):
                 
             except (asyncio.CancelledError, ConnectionResetError, BrokenPipeError):
                 # Client disconnected, stop sending data silently
+                process.terminate()  # Stop the subprocess if client disconnects
+                try:
+                    process.wait(timeout=5)
+                except Exception:
+                    process.kill()
                 break
     except Exception as e:
         yield f"data: Error streaming output: {str(e)}\n\n"

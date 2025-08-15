@@ -5,6 +5,8 @@ import Cloud from './Cloud';
 import CloudClusterForm from './CloudClusterForm';
 
 const ChooseExecutionOption = ({  filename, onBack }) => {
+  console.log('onBack prop received:', onBack);
+
   const [hoveredOption, setHoveredOption] = useState(null);
   const [running, setRunning] = useState(false);
   const [logs, setLogs] = useState('');

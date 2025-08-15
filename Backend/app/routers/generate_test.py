@@ -113,7 +113,8 @@ def generate_test_file(
             vus=vus,
             iterations=iterations,
             base_url=base_url,
-            use_iterations=use_iterations
+            use_iterations=use_iterations,
+            token=request.token  # <-- Pass token to template context
         )
  
         # Save rendered test script

@@ -7,6 +7,7 @@ import { FaPlus } from 'react-icons/fa'; // Using Font Awesome plus icon
 
 const HTTP_METHODS = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'];
 const STORAGE_KEY = 'selectedApis';
+const MQTT_STORAGE_KEY = 'selectedApisMQTT';
 
 const loadFromLocalStorage = () => {
   try {
@@ -15,6 +16,19 @@ const loadFromLocalStorage = () => {
   } catch (error) {
     return [];
   }
+};
+
+const loadMqttFromLocalStorage = () => {
+  try {
+    const saved = localStorage.getItem(MQTT_STORAGE_KEY);
+    return saved ? JSON.parse(saved) : [];
+  } catch (error) {
+    return [];
+  }
+};
+
+const saveMqttToLocalStorage = (mqttApis) => {
+  localStorage.setItem(MQTT_STORAGE_KEY, JSON.stringify(mqttApis));
 };
 
 const ListSelectedApis = ({ swaggerFilename }) => {
@@ -33,6 +47,10 @@ const [hasToken, setHasToken] = useState(false);
   const [isTokenModalOpen, setTokenModalOpen] = useState(false);
   const [tokenInput, setTokenInput] = useState('');
 
+  // History modal state
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [scenarios, setScenarios] = useState([]);
+
   // Initialize token from session storage
 
   // Update handleSaveToken to save to localStorage as AssignedUserToken
@@ -42,19 +60,14 @@ const [hasToken, setHasToken] = useState(false);
     setTokenModalOpen(false);
   };
 
-  const handleBackToLaunchModal = () => {
-    setShowExecutionOptions(false);
-    setShowLaunchModal(true);
-  };
-
   const handleMQTTExecution = async () => {
     if (!mqttApis.length) {
       alert("No MQTT API selected.");
       return;
     }
-  
+
     const { functionName, params, bodyValue } = mqttApis[0];
-  
+
     // Remove all '-path' suffixes from params keys
     const cleanedParams = {};
     Object.entries(params).forEach(([key, value]) => {
@@ -64,7 +77,7 @@ const [hasToken, setHasToken] = useState(false);
         cleanedParams[key] = value;
       }
     });
-  
+
     // Validate credentials in bodyValue
     let parsedCredentials = [];
     try {
@@ -79,7 +92,7 @@ const [hasToken, setHasToken] = useState(false);
       alert("Failed to parse credentials from body. Make sure it's a valid JSON.");
       return;
     }
-  
+
     // Build the payload with actual user-provided credentials
     const payload = {
       credentials: parsedCredentials,
@@ -92,7 +105,7 @@ const [hasToken, setHasToken] = useState(false);
         }
       ]
     };
-  
+
     try {
       const token = sessionStorage.getItem('authToken');
       const response = await fetch('http://localhost:6060/mqtt/', {
@@ -103,9 +116,9 @@ const [hasToken, setHasToken] = useState(false);
         },
         body: JSON.stringify(payload),
       });
-  
+
       console.log("MQTT payload:", payload);
-  
+
       const result = await response.json();
       setGeneratedFilename(result.filename);
       setModalOpen(false);
@@ -122,21 +135,30 @@ const apiData = useSelector((state) => {
 
     const jsData = requestData.toJS();
     const results = [];
+    let mqttApis = loadMqttFromLocalStorage();
 
     for (const [apiPath, methods] of Object.entries(jsData)) {
       for (const [method, methodData] of Object.entries(methods)) {
-        // Force method to 'MQTT' for the specific MQTT test API path
         const isMqttApi = apiPath === '/run-mqtt-test/{VU_COUNT}/{duration}/{broker}/{port}/{topic}/{password}';
-        results.push({
+        const apiObj = {
           api: apiPath,
           method: isMqttApi ? 'POST' : method.toUpperCase(),
           bodyValue: methodData.bodyValue || null,
           functionName: methodData.functionName || '',
           params: methodData.params || {},
-        });
+        };
+        if (isMqttApi && apiObj.functionName) {
+          // Add to selectedApisMQTT if not already present
+          if (!mqttApis.some(item => item.api === apiObj.api && item.method === apiObj.method && item.functionName === apiObj.functionName)) {
+            mqttApis.push(apiObj);
+          }
+        } else {
+          results.push(apiObj); // Only push non-MQTT APIs to results
+        }
       }
     }
-
+    // Save updated MQTT APIs to localStorage
+    saveMqttToLocalStorage(mqttApis);
     console.log('[apiData]', results); // Debug: log apiData every time selector runs
     return results;
   });
@@ -159,6 +181,8 @@ const handleRemoveLocal = (api, method, functionName) => {
   const updated = saved.filter(item => !(item.api === api && item.method === method && item.functionName === functionName));
   localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
   setSavedApis(updated);
+  // Also remove from Redux state
+  handleRemove(api, method);
 };
 
   const handleLaunchTest = async (stages) => {
@@ -236,6 +260,57 @@ const handleRemoveLocal = (api, method, functionName) => {
     console.error('Error launching test:', error);
   }
 };
+
+  // Function to fetch user's scenario history and open the History modal
+  const handleShowHistory = async () => {
+    try {
+      const token = sessionStorage.getItem('authToken');
+      const res = await fetch('http://localhost:6060/scenarios/my', {
+        method: 'GET',
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+      });
+
+      if (!res.ok) {
+        console.error('Failed to fetch scenarios, status:', res.status);
+        // still open modal but show no scenarios
+        setScenarios([]);
+        setShowHistoryModal(true);
+        return;
+      }
+
+      const data = await res.json();
+
+      // Defensive mapping in case backend returns raw SQLAlchemy objects or different keys
+      const parsed = Array.isArray(data) ? data.map((s, idx) => ({
+        id: s.id ?? s.pk ?? s._id ?? idx,
+        name: s.name ?? s.title ?? s.filename ?? `scenario-${idx}`,
+        filename: s.filename ?? s.swagger_filename ?? null,
+        created_at: s.created_at ?? s.createdAt ?? s.timestamp ?? null,
+      })) : [];
+
+      console.log('[handleShowHistory] scenarios:', parsed);
+      setScenarios(parsed);
+      setShowHistoryModal(true);
+    } catch (error) {
+      console.error('Error fetching scenario history:', error);
+      setScenarios([]);
+      setShowHistoryModal(true);
+    }
+  };
+
+  // Function to handle selecting a scenario from the history modal
+  const handleSelectScenario = (scenario) => {
+    setShowHistoryModal(false);
+    // Prefer explicit filename fields, fall back to name
+    const filename = scenario.filename ?? scenario.swagger_filename ?? scenario.name;
+    if (!filename) {
+      alert('Selected scenario has no associated filename.');
+      return;
+    }
+    setGeneratedFilename(filename);
+    // Open execution options for the selected scenario
+    setShowExecutionOptions(true);
+  };
 
   const getMethodColor = (method) => {
     switch (method.toLowerCase()) {
@@ -596,7 +671,7 @@ const mqttSavedApis = savedApis.filter(item => item.method === 'POST' &&
       {showExecutionOptions ? (
         <ChooseExecutionOption
           filename={generatedFilename}
-          onBack={handleBackToLaunchModal}
+          onBack={() => setShowExecutionOptions(false)}
           onClose={() => setShowExecutionOptions(false)}
         />
       ) : (
@@ -724,6 +799,24 @@ const mqttSavedApis = savedApis.filter(item => item.method === 'POST' &&
   <FaPlus style={{ marginRight: '8px', fontSize: '14px' }} />
  Create Scenario
  </button>
+  <button
+  onClick={handleShowHistory}
+  style={{
+    padding: '8px 16px',
+    background: 'linear-gradient(135deg, #475a80, #2d3748)',
+    color: '#fff',
+    border: 'none',
+    borderRadius: '6px',
+    fontSize: '14px',
+    fontWeight: 500,
+    cursor: 'pointer',
+    marginLeft: '12px',
+    transition: 'all 0.2s ease',
+  }}
+>
+  History
+</button>
+
                 </ul>
               )
             ) : (
@@ -980,6 +1073,194 @@ const mqttSavedApis = savedApis.filter(item => item.method === 'POST' &&
           
           </div>
         </>
+      )}
+
+      {/* History Modal */}
+      {showHistoryModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.7)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000,
+        }}>
+<div style={{
+    background: 'linear-gradient(135deg, rgb(45, 55, 72), #475a80)',
+    borderRadius: '16px',
+    padding: '32px',
+    width: '480px',
+    maxWidth: '90vw',
+    boxShadow: '0 12px 30px rgba(0,0,0,0.4)',
+    color: 'white',
+    fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
+    border: '1px solid rgba(255,255,255,0.1)'
+}}>
+    <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: '24px',
+        paddingBottom: '16px',
+        borderBottom: '1px solid rgba(255,255,255,0.1)'
+    }}>
+        <h3 style={{
+            margin: 0,
+            fontSize: '20px',
+            fontWeight: 600,
+            letterSpacing: '0.5px',
+            color: 'white'
+        }}>Select a Scenario</h3>
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{opacity: 0.7}}>
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+    </div>
+
+    {scenarios.length === 0 ? (
+        <div style={{
+            padding: '24px',
+            background: 'rgba(0,0,0,0.1)',
+            borderRadius: '8px',
+            textAlign: 'center',
+            color: 'rgba(255,255,255,0.7)'
+        }}>
+            No scenarios found
+        </div>
+    ) : (
+        <ul style={{
+            listStyle: 'none',
+            padding: 0,
+            margin: 0,
+            maxHeight: '400px',
+            overflowY: 'auto',
+            scrollbarWidth: 'thin',
+            paddingRight: '8px'
+        }}>
+            {scenarios.map((scenario) => (
+                <li key={scenario.id} style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    marginBottom: '12px',
+                    gap: '12px',
+                    padding: '14px 16px',
+                    background: 'rgba(0,0,0,0.15)',
+                    borderRadius: '10px',
+                    transition: 'all 0.2s ease',
+                    ':hover': {
+                        background: 'rgba(0,0,0,0.25)',
+                        transform: 'translateY(-1px)'
+                    }
+                }}>
+                    <div style={{ flex: 1 }}>
+                        <div style={{
+                            color: 'white',
+                            fontWeight: 500,
+                            fontSize: '15px',
+                            marginBottom: '2px'
+                        }}>{scenario.name}</div>
+
+                    </div>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                        <button
+                            style={{
+                                padding: '8px 16px',
+                                borderRadius: '8px',
+                                border: 'none',
+                                background: 'linear-gradient(135deg, rgba(21, 14, 106, 0.9), rgba(2, 15, 83, 0.9))',
+                                color: '#ffff',
+                                fontWeight: 600,
+                                cursor: 'pointer',
+                                transition: 'all 0.2s ease',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                ':hover': {
+                                    transform: 'translateY(-1px)',
+                                    boxShadow: '0 4px 8px rgba(0,0,0,0.2)'
+                                }
+                            }}
+                            onClick={() => handleSelectScenario(scenario)}
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                            </svg>
+                            Execute
+                        </button>
+                        <button
+                            style={{
+                                padding: '8px 16px',
+                                borderRadius: '8px',
+                                border: 'none',
+                                background: 'linear-gradient(135deg, rgba(0, 123, 255, 0.9), rgba(0, 86, 179, 0.9))',
+                                color: 'white',
+                                fontWeight: 600,
+                                cursor: 'pointer',
+                                transition: 'all 0.2s ease',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                ':hover': {
+                                    transform: 'translateY(-1px)',
+                                    boxShadow: '0 4px 8px rgba(0,0,0,0.2)'
+                                }
+                            }}
+                            onClick={() => window.open(`http://localhost:6060/scenarios/${scenario.name}`, '_blank')}
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                                <polyline points="15 3 21 3 21 9"></polyline>
+                                <line x1="10" y1="14" x2="21" y2="3"></line>
+                            </svg>
+                            View
+                        </button>
+                    </div>
+                </li>
+            ))}
+        </ul>
+    )}
+
+    <div style={{
+        display: 'flex',
+        justifyContent: 'flex-end',
+        marginTop: '24px',
+        paddingTop: '16px',
+        borderTop: '1px solid rgba(255,255,255,0.1)'
+    }}>
+        <button
+            onClick={() => setShowHistoryModal(false)}
+            style={{
+                padding: '10px 20px',
+                background: 'rgba(255,255,255,0.1)',
+                color: 'white',
+                border: 'none',
+                borderRadius: '8px',
+                fontWeight: 500,
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                ':hover': {
+                    background: 'rgba(255,255,255,0.2)',
+                    transform: 'translateY(-1px)'
+                }
+            }}
+        >
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+            Close
+        </button>
+    </div>
+</div>
+        </div>
       )}
     </div>
   );

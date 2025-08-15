@@ -94,9 +94,8 @@ deleteSpec = async () => {
     // Clear localStorage
     localStorage.removeItem('selectedApis');
     
-    // Collapse all operation summaries
-    this.props.layoutActions.showSummary(false);
-    this.props.layoutActions.show([], false);
+    // Collapse all operation summaries (removed showSummary and show calls that do not exist)
+    // If you need to collapse summaries, implement the correct function in layoutActions
     
     // If it's an uploaded spec, delete from server
     if (currentSpec.filename) {
@@ -127,7 +126,16 @@ deleteSpec = async () => {
     }
     
     // Open upload modal after successful deletion
-    this.setState({ showUploadModal: true });
+    // Only open upload modal if there are no specs left
+const allSpecsAfterDelete = [
+  ...(urls || []),
+  ...this.state.customSpecs.filter(spec => spec.url !== currentSpec.url),
+  ...this.state.uploadedSpecs.filter(spec => spec.url !== currentSpec.url)
+];
+if (allSpecsAfterDelete.length === 0) {
+  this.setState({ showUploadModal: true });
+}
+
     
   } catch (error) {
     console.error('Error deleting spec:', error);
@@ -166,7 +174,20 @@ deleteSpec = async () => {
       })
     );
 
-    this.setState({ uploadedSpecs });
+    this.setState({ uploadedSpecs }, () => {
+      // After setting uploadedSpecs, check if there is only one spec in total
+      const configs = this.props.getConfigs();
+      const urls = configs.urls || [];
+      const allSpecs = [
+        ...(urls || []),
+        ...this.state.customSpecs,
+        ...uploadedSpecs
+      ];
+      if (allSpecs.length === 1) {
+        this.setState({ selectedIndex: 0 });
+        this.loadSpec(allSpecs[0].url);
+      }
+    });
   } catch (err) {
     // handle error if needed
   }
@@ -261,7 +282,19 @@ const allSpecs = [
     const configs = this.props.getConfigs()
     const urls = configs.urls || []
 
-    if(urls && urls.length) {
+    // Try to load the first available spec from any source
+    const allSpecs = [
+      ...(urls || []),
+      ...this.state.customSpecs,
+      ...this.state.uploadedSpecs
+    ];
+
+    if (allSpecs.length === 1) {
+      // Only one spec, load it
+      this.setState({ selectedIndex: 0 });
+      this.loadSpec(allSpecs[0].url);
+    } else if (urls && urls.length) {
+      // Multiple specs, use default logic
       var targetIndex = this.state.selectedIndex
       let search = parseSearch()
       let primaryName = search["urls.primaryName"] || configs.urls.primaryName
@@ -275,7 +308,6 @@ const allSpecs = [
             }
         })
       }
-
       this.loadSpec(urls[targetIndex].url)
     }
     
@@ -483,6 +515,8 @@ const styles = `
         border-radius: 6px !important;
             cursor: pointer !important;
     border: 1px solid #2d3748 !important;
+        box-shadow: 0 2px 2px rgba(0, 0, 0, 0.4) !important;
+
 
 
   }

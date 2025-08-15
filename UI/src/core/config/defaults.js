@@ -63,6 +63,8 @@ const defaultOptions = Object.freeze({
     "head",
     "patch",
     "trace",
+        "mqtts",
+
   ],
   queryConfigEnabled: false,
 

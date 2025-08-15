@@ -68,9 +68,9 @@ export function verifyUser(email) {
  * @param {string} password - User password.
  * @returns {string|null} - Authentication token or null if login fails.
  */
-export function login(email, password) {
+export function login(email, password,url) {
     const payload = { username: email, password };
-    const response = makeRequest('POST', `${BASE_URL}/auth/login`, payload);
+    const response = makeRequest('POST', `${url}`, payload);
     return response ? response.token : null;
 }
 

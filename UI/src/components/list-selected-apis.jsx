@@ -22,6 +22,7 @@ const ListSelectedApis = ({ swaggerFilename }) => {
 const [hasToken, setHasToken] = useState(false);
 
   const dispatch = useDispatch();
+  
   const [isModalOpen, setModalOpen] = useState(false);
   const [generatedFilename, setGeneratedFilename] = useState(null);
   const [showLaunchModal, setShowLaunchModal] = useState(true);
@@ -48,10 +49,10 @@ const [hasToken, setHasToken] = useState(false);
     setTokenModalOpen(false);
   };
 
-  const handleBackToLaunchModal = () => {
-    setShowExecutionOptions(false);
-    setShowLaunchModal(true);
-  };
+  // const handleBackToLaunchModal = () => {
+  //   setShowExecutionOptions(false);
+  //   setShowLaunchModal(true);
+  // };
 
   const handleMQTTExecution = async () => {
     if (!mqttApis.length) {
@@ -606,7 +607,6 @@ const mqttSavedApis = savedApis.filter(item => item.method === 'MQTT');
       {showExecutionOptions ? (
         <ChooseExecutionOption
           filename={generatedFilename}
-          onBack={handleBackToLaunchModal}
           onClose={() => setShowExecutionOptions(false)}
         />
       ) : (
@@ -733,7 +733,8 @@ const mqttSavedApis = savedApis.filter(item => item.method === 'MQTT');
 >
   <FaPlus style={{ marginRight: '8px', fontSize: '14px' }} />
  Create Scenario
- </button>
+ </button> 
+ <button> ss</button>
                 </ul>
               )
             ) : (

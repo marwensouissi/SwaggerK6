@@ -1,25 +1,23 @@
-# schemas.py
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
+from typing import Optional
 
 class UserBase(BaseModel):
     username: str
+    email: EmailStr
 
-class UserCreate(UserBase):
+class UserCreate(BaseModel):
+    username: str
+    email: EmailStr
     password: str
-
-class UserRead(UserBase):
+class UserRead(BaseModel):
     id: int
+    username: str
+    email: EmailStr
     role: str
-    
-    class Config:
-        from_attributes = True  # Updated for Pydantic v2
+    is_verified: bool
 
-class User(UserBase):
-    id: int
-    role: str
-    
     class Config:
-        from_attributes = True  # Updated for Pydantic v2
+        orm_mode = True
 
 class LoginRequest(BaseModel):
     username: str

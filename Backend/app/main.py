@@ -13,7 +13,7 @@ from app.routers import generate_test
 from app.routers import execution
 from app.routers import mqtt
 from app.routers import deployment
-
+from app.routers import scenario
 from app.routers import jenkins
 
 import asyncio
@@ -26,7 +26,7 @@ app.include_router(generate_test.router)
 app.include_router(execution.router)
 app.include_router(jenkins.router)
 app.include_router(mqtt.router)
-
+app.include_router(scenario.router)
 
 
 @app.on_event("startup")
@@ -34,7 +34,7 @@ async def create_admin_user():
     db = next(get_db())
     admin_username = os.getenv("ADMIN_USERNAME", "admin")
     admin_password = os.getenv("ADMIN_PASSWORD", "admin123")
-    
+    admin_email = os.getenv("ADMIN_EMAIL", "admin@example.com")
 
     user = db.query(User).filter(User.username == admin_username).first()
     if not user:
@@ -42,7 +42,9 @@ async def create_admin_user():
         new_user = User(
             username=admin_username,
             password=hashed_pw,
-            role="admin"  # ✅ Set role here
+            email=admin_email,
+            role="admin",
+            is_verified=True
         )
         db.add(new_user)
         db.commit()
