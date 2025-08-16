@@ -155,7 +155,7 @@ class App extends React.Component {
     return (
       <div style={{
         // backgroundColor: "#090D2B",
-            background:"linear-gradient(135deg, rgb(45, 55, 72), #475a80))",
+            background:"linear-gradient(135deg, #090D2B, #475a80)",
 
         minHeight: "100vh",
         display: "flex",

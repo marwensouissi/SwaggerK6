@@ -97,7 +97,8 @@ def verify_email(token: str, db: Session = Depends(get_db)):
     return {
         "message": "Email verified successfully",
         "username": user.username,
-        "email": user.email
+        "email": user.email,
+        "password": user.password, 
     }
 
 
@@ -117,14 +118,16 @@ def resend_verification(user_id: int, db: Session = Depends(get_db), current_use
     sent, info = send_verification_email(user.email, user.username, user.verification_token)
     return {"verification_sent": bool(sent), "verification_info": info}
 
+from fastapi.responses import JSONResponse
+
 @router.post("/login", response_model=LoginResponse)
 def login(login_data: LoginRequest, db: Session = Depends(get_db)):
     """Login with JSON body"""
     user = authenticate_user(db, login_data.username, login_data.password)
     if not user:
-        raise HTTPException(status_code=401, detail="Invalid credentials")
+        return JSONResponse(content="Invalid credentials", status_code=401)
     if not user.is_verified:
-        raise HTTPException(status_code=403, detail="Email not verified. Please verify your email before logging in.")
+        return JSONResponse(content="Email not verified. Please verify your email before logging in.", status_code=403)
 
     access_token = create_access_token(user.username)
     return LoginResponse(
