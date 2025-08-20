@@ -34,11 +34,9 @@ let token;
 
 {% if token %}
 token = "{{ token }}";
-console.log("🔐 Using provided token.");
 {% else %}
 const user = signup();
 token = login(user.email, PASSWORD);
-console.log("🔐 Token acquired via signup/login.");
 {% endif %}
 
  
@@ -55,9 +53,11 @@ const {{ func_name }} = {{ test.method.lower() }}_abstract_with_payload({
   tag: "{{ test.function }}",
   job: "{{ test.function }}",
   {% if test.payload is defined %}
-    payload: {{ test.payload
-                | tojson
-                | regex_replace('"randomString\\((\\d+)\\)"', 'randomString(\\1)') }}
+payload: {{ test.payload
+            | tojson
+            | regex_replace('"randomString\\((\\d+)\\)"', 'randomString(\g<1>)')
+            | safe }}
+
   {% else %}
     payload: {}
   {% endif %}

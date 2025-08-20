@@ -36,7 +36,7 @@ variable "region" {
 }
 
 variable "k8s_version" {
-  default     = "1.33.1-do.2"
+  default     = "1.33.1-do.3"
   description = "Kubernetes version"
 }
 

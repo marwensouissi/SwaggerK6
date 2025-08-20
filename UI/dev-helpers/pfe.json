@@ -1,0 +1,232 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Email Verification API",
+    "description": "API for sending email verification links to users",
+    "version": "1.0.0",
+    "contact": {
+      "name": "KianTech Support",
+      "email": "support@kiantech.com"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://api.kiantech.com/v1",
+      "description": "Production server"
+    },
+    {
+      "url": "https://sandbox-api.kiantech.com/v1",
+      "description": "Sandbox server"
+    }
+  ],
+  "paths": {
+    "/auth/send-verification-email": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Send verification email",
+        "description": "Sends a verification email to the specified user with a verification link",
+        "operationId": "sendVerificationEmail",
+        "requestBody": {
+          "description": "Email verification request",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerificationEmailRequest"
+              },
+              "examples": {
+                "basic": {
+                  "value": {
+                    "email": "user@example.com",
+                    "username": "johndoe"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Email sent successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VerificationEmailResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apiKey": []
+          }
+        ]
+      }
+    },
+    "/run-mqtt-test/{VU_COUNT}/{duration}/{broker}/{port}/{topic}/{password}": {
+      "post": {
+        "tags": [
+          "mqtt-controller"
+        ],
+        "summary": "Run MQTT Load Test via Path Params and Credentials List",
+        "description": "Runs MQTT load test using parameters passed in the URL path and a list of credentials in the request body.",
+        "operationId": "runMqttTestWithParamsAndCredentials",
+        "parameters": [
+          {
+            "name": "VU_COUNT",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Number of Virtual Users for K6 test"
+          },
+          {
+            "name": "duration",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Duration of the load test"
+          },
+          {
+            "name": "broker",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "MQTT broker address"
+          },
+          {
+            "name": "port",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "MQTT broker port"
+          },
+          {
+            "name": "topic",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "MQTT topic to publish to"
+          },
+          {
+            "name": "password",
+            "in": "path",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "MQTT password (can be empty)"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "credentials": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "List of MQTT credentials"
+                  }
+                },
+                "required": [
+                  "credentials"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Test started successfully"
+          },
+          "400": {
+            "description": "Invalid input"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "VerificationEmailRequest": {
+        "type": "object",
+        "required": [
+          "email",
+          "username"
+        ],
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "description": "Recipient's email address",
+            "example": "user@example.com"
+          },
+          "username": {
+            "type": "string",
+            "description": "Recipient's username for personalization",
+            "example": "johndoe"
+          }
+        }
+      },
+      "VerificationEmailResponse": {
+        "type": "object",
+        "properties": {}
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "name": "X-API-KEY",
+        "in": "header",
+        "description": "API key for authentication"
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Authentication",
+      "description": "User authentication and verification endpoints"
+    }
+  ]
+}
