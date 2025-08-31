@@ -1,0 +1,34 @@
+apiVersion: k6.io/v1alpha1
+kind: TestRun
+metadata:
+  name: retina-6fb013bb-test
+  namespace: default
+  labels:
+    test-name: retina-6fb013bb-test
+spec:
+  parallelism: 1
+  script:
+    configMap:
+      name: retina-6fb013bb-test
+      file: retina-6fb013bb-test.tar
+  runner:
+    image: ndammakian/xk6-images:1.0
+    imagePullPolicy: IfNotPresent
+    env:
+      - name: K6_WEB_DASHBOARD
+        value: "true"
+    ports:
+      - containerPort: 5665
+        name: dashboard
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: retina-6fb013bb-test-service
+spec:
+  type: LoadBalancer
+  selector:
+    job-name: retina-6fb013bb-test-1
+  ports:
+    - port: 5665
+      targetPort: 5665
