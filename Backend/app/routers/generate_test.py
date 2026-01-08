@@ -261,10 +261,10 @@ def git_push(path: Path, message: str):
     subprocess.run(["git", "commit", "-m", message], cwd=path, check=True)
 
     # Set remote with credentials (only needed once, or ensure it's already done)
-    remote_url = "https://***REMOVED_API_KEY***4@bitbucket.org/ndammak/itona-k6.git"
+    remote_url = "https://msouissi1:@bitbucket.org/ndammak/itona-k6.git"
     subprocess.run(["git", "remote", "set-url", "origin", remote_url], cwd=path, check=True)
 
-    # Push to origin (main or master depending on your branch)
+    # Push to origin (main or master depend ing on your branch)
     subprocess.run(["git", "push", "origin", "main"], cwd=path, check=True)
 
 
